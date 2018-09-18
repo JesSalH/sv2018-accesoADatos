@@ -1,0 +1,10 @@
+CREATE DATABASE dia01;
+
+\connect dia01;
+
+CREATE TABLE articulos(id bigserial primary key, nombre varchar(100));
+
+INSERT INTO articulos(nombre) VALUES('raton');
+INSERT INTO articulos(nombre) VALUES('teclado');
+
+SELECT * FROM articulos;
