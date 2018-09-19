@@ -1,0 +1,11 @@
+CREATE TABLE clientes (
+	id varchar primary key,
+	nombre varchar(20),
+	fecha date
+);
+
+INSERT INTO clientes values ('Anakin', 'Alfredo', '2007-12-13');
+INSERT INTO clientes values ('Padme', 'Juana', '2007-10-03');
+
+
+SELECT * FROM clientes WHERE nombre LIKE 'A%' OR nombre LIKE'a%';
