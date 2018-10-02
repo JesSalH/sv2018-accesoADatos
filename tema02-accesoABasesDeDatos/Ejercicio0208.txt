@@ -1,0 +1,94 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Scanner;
+
+public class ConsultaBD {
+	
+	private static void buscar(Scanner scn, Statement statement) throws SQLException {
+		String texto, sql;
+    
+		System.out.println("Introduce el texto a buscar:");
+		texto = scn.nextLine();
+    
+		sql = "SELECT nombre, 'Precio' FROM articulos WHERE nombre LIKE('%" + texto + "%')";
+		ResultSet rs = statement.executeQuery(sql);
+    
+		if(rs.isBeforeFirst()) {
+			System.out.println("Nombre" + "\t\t" + "Precio");
+			System.out.println("-----------------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t\t" + rs.getString(2));
+			}
+		} else {
+			System.out.print("No hay registros con ese nombre.");
+		}
+		scn.nextLine();
+	}
+	
+	private static void add(Scanner scn, Statement statement) throws SQLException {
+		String nombre, precio;
+    
+		System.out.println("Introduce el nombre:");
+		nombre=scn.nextLine();
+    
+		System.out.println("Introduce el precio:");
+		precio=scn.nextLine();
+    
+		if(1 == statement.executeUpdate("INSERT INTO articulos VALUES('" + nombre + "', " + precio + ")")) {
+			System.out.print("Operación realizada con éxito.");
+			scn.nextLine();
+		}
+	}
+	
+	public static void main(String[] args) throws ClassNotFoundException, SQLException{
+		try {
+			Class.forName("org.postgresql.Driver");
+			
+			String url = "jdbc:postgresql://localhost:5432/dia01";
+			String usuario = "postgres";
+			String password = "1234";
+			Connection con = DriverManager.getConnection(url, usuario, password);
+			
+			Statement statement = con.createStatement();
+
+			Scanner scn = new Scanner(System.in);
+			boolean salir = false;
+			String orden;
+			
+			do {
+				System.out.println("1.- Buscar");
+				System.out.println("2.- Añadir");
+				System.out.println("3.- Salir");
+        
+				orden=scn.nextLine();
+        
+				switch(orden) {
+				case("1"):
+					buscar(scn, statement);
+			    break;
+				case("2"):
+					add(scn, statement);
+					break;
+				case("3"):
+					salir = true;
+					break;
+				default:
+					System.out.println("Orden no encontrada.");
+					scn.nextLine();
+					break;
+				}
+			} while(!salir);
+			
+			System.out.println("Usted ha salido del programa");
+			
+			con.close();
+		}catch(ClassNotFoundException e) {
+			System.out.println("Error: "+e.getMessage());
+		}catch(SQLException e) {
+			System.out.println("Error: "+e.getMessage());
+		}
+	}
+}
