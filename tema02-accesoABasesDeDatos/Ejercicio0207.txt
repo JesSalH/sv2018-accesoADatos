@@ -1,0 +1,38 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+public class ConsultaBD {
+	public static void main (String[] args) throws ClassNotFoundException, SQLException{
+		
+			Class.forName("org.postgresql.Driver");
+			String url = "jdbc:postgresql://localhost:5432/dia02";
+			String usuario = "postgres";
+			String password = "1234";
+
+      Connection con = DriverManager.getConnection(url, usuario, password);
+			Statement statement = con.createStatement();
+			
+			int cantidad=0;
+			ArrayList<String> sentenciasSQL = new ArrayList<String>();
+			
+			sentenciasSQL.add("insert into servidores values(1,'Usuario1', '20/01/1999');");
+			sentenciasSQL.add("insert into servidores values(2,'Usuario2', '01/07/2000');");
+			
+      try {
+			  for(int i=0; i<sentenciasSQL.size();i++) {
+				  cantidad += statement.executeUpdate(sentenciasSQL.get(i));
+			  }
+			  if(cantidad > 0) {
+				  System.out.println("Operación realizada con éxito: " + cantidad + " registros modificados");
+			  }
+      }catch(ClassNotFoundException e) {
+        System.out.println("Error: "+e.getMessage());
+      }catch(SQLException e) {
+        System.out.println("Error: "+e.getMessage());
+      }
+    con.close();
+	}
+}
