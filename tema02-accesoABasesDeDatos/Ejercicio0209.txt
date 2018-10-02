@@ -1,0 +1,156 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Scanner;
+
+public class ConsultaBD {
+	
+	public static void menu() {
+		System.out.println("---------------------");
+		System.out.println("1 - Aañdir artículo");
+		System.out.println("2 - Buscar por texto");
+		System.out.println("3 - Modificar");
+		System.out.println("4 - Salir");
+		System.out.println("---------------------");
+		System.out.println("");
+	}
+	
+	public static void addArticulo() throws ClassNotFoundException,SQLException {
+		Class.forName("org.postgresql.Driver");
+		
+		String url = "jdbc:postgresql://localhost:5432/dia01";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		Connection con = DriverManager.getConnection(url, usuario, password);
+		Statement statement = con.createStatement(); 
+		
+		String nombre;
+		int precio;
+		int aux = 0;
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.println("Introduce nombre del artículo");
+		nombre = scn.nextLine();
+		
+		System.out.println("Introduce precio del artículo");
+		precio = scn.nextInt();
+		
+		String sentenciaSQL = "INSERT INTO articulos(nombre,precio) VALUES ('"+ nombre + "'," + precio + ");";
+		try {
+			aux = statement.executeUpdate(sentenciaSQL);
+			con.close();
+		}
+		catch (SQLException sqle){
+			System.out.println("Error" + sqle.getMessage());
+		}
+		
+		if(aux != 1)
+		{
+			System.out.println("Error al insertar");
+		}
+	}
+	
+	public static void searchNombre() throws ClassNotFoundException,SQLException {
+		Class.forName("org.postgresql.Driver");
+		
+		String url = "jdbc:postgresql://localhost:5432/dia01";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		Connection con = DriverManager.getConnection(url, usuario, password);
+		Statement statement = con.createStatement(); 
+		
+		String nombre;
+		int aux=0;
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.println("Nombre a buscar: ");
+		nombre = scn.nextLine();
+		
+		String sentenciaSQL = "SELECT * FROM articulos WHERE LOWER(nombre) LIKE '%" + nombre.toLowerCase() + "%'";
+		ResultSet rs = statement.executeQuery(sentenciaSQL);
+		
+    if(rs.next() == false) {
+			System.out.println("No results");
+		}	else {
+			System.out.println("Id" + "\t" + "Nombre" + "\t" + "precio");
+			System.out.println("-----------------------------------------");
+		
+			do {
+				System.out.println(rs.getString(1) + "\t " +
+				rs.getString(2) + "\t " + rs.getString(3));
+			} while (rs.next());
+		}
+		rs.close();
+		con.close();
+	}
+	
+	public static void modificar()throws ClassNotFoundException,SQLException {
+		Class.forName("org.postgresql.Driver");
+		
+		String url = "jdbc:postgresql://localhost:5432/dia01";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		Connection con = DriverManager.getConnection(url, usuario, password);
+		Statement statement = con.createStatement(); 
+		
+		String nombre;
+		int id = 0;
+		Scanner scn = new Scanner(System.in);
+		Scanner scn2 = new Scanner(System.in);
+		
+		System.out.println("Introduce id: ");
+		id = scn.nextInt();
+		String sentenciaSQL1 = "SELECT * FROM articulos WHERE id = " + id + ";";
+		
+		ResultSet rs = statement.executeQuery(sentenciaSQL1);
+		if(rs.next() == false) {
+			System.out.println("No hay productos con ese id");
+		} else {
+			System.out.println("Introduce nuevo nombre: ");
+			nombre = scn2.nextLine();
+			String sentenciaSQL2 = "UPDATE articulos SET nombre = '" + nombre + "' WHERE id = "+ id +";";
+			int aux;
+			aux = statement.executeUpdate(sentenciaSQL2);
+			if(aux!=1) {
+				System.out.println("No se ha podido actualizar");
+			}	else {
+				System.out.println("Actualizado");
+			}
+		}
+		rs.close();
+		con.close();
+	}
+
+	public static void main(String[] args) throws ClassNotFoundException,SQLException {
+		
+		String op,aux;
+		boolean exit = false;
+		Scanner scn = new Scanner(System.in);
+		
+		do {
+			menu();
+			System.out.println("Introduce opción");
+			op = scn.nextLine();
+			
+			switch(op) {
+			case "1":
+				addArticulo();
+				break;
+			case "2":
+				searchNombre();
+				break;
+			case "3":
+				modificar();
+			case "4":
+				System.out.println("Adiós -.- ");
+				exit = true;
+				break;
+			}
+		} while(!exit);
+	}
+}
