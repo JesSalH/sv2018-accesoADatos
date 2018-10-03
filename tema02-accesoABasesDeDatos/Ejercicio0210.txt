@@ -1,0 +1,173 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Scanner;
+
+public class ConsultaBD {
+	
+  static Scanner scn;
+	static Statement statement;
+  
+	public static void crearTablas() throws SQLException {
+		String sql = "SELECT * FROM pg_tables WHERE tablename='cursos';";
+		if(statement.executeQuery(sql) == null) {
+			sql = "create table cursos("
+					+ "id serial primary key,"
+					+ "titulo varchar(20),"
+					+ "fechaIni date"
+					+ ");"
+					+ "create table estudiantes("
+					+ "id serial primary key,"
+					+ "nombre varchar(20),"
+					+ "id_curso int references cursos(id)"
+					+ ");";
+			statement.executeUpdate(sql);
+		 } else {
+			System.out.println("Ya estan creadas");
+			System.out.println("Pulse enter");
+			scn.nextLine();
+		}
+	}
+	public static void crearCurso() throws SQLException {
+		String titulo, fecha, sql;
+		
+		System.out.println("Introduce el titulo:");
+		titulo=scn.nextLine();
+    
+		System.out.println("Introduce el fecha inicial:");
+		fecha=scn.nextLine();
+		
+		sql = "INSERT INTO cursos(titulo, fechaIni) VALUES ('"+titulo+"', '"+fecha+"')";
+		if(1 == statement.executeUpdate(sql)) {
+			System.out.println("Operación realizada con éxito");
+			System.out.println("Pulse intro");
+			scn.nextLine();
+		}
+	}
+  
+	public static void crearEstudiante() throws SQLException {
+		String nombre, sql;
+		int idCurso;
+		
+		System.out.println("Introduce el nombre:");
+		nombre = scn.nextLine();
+		
+		sql = "SELECT id, titulo FROM cursos";
+		ResultSet rs = statement.executeQuery(sql);
+		if(rs.isBeforeFirst()) {
+			System.out.println("ID" + "\t\t" + "Titulo");
+			System.out.println("-----------------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t\t" + rs.getString(2));
+			}
+		} else {
+			System.out.println("No hay cursos");
+		}
+		
+		System.out.println("Introduce el id del curso:");
+		idCurso = scn.nextInt();
+		
+		sql = "INSERT INTO estudiantes(nombre, id_curso) VALUES('"+nombre+"', "+idCurso+")";
+		if(1 == statement.executeUpdate(sql)) {
+			System.out.println("Operación realizada con éxito");
+			System.out.println("Pulse intro");
+			scn.nextLine();
+		}
+	}
+  
+	public static void verTodo() throws SQLException {
+		String sql;
+		
+		sql="SELECT * FROM cursos";
+		ResultSet rs = statement.executeQuery(sql);
+		if(rs.isBeforeFirst()) {
+			System.out.println("---------------------CURSOS---------------------");
+			System.out.println("------------------------------------------------");
+			System.out.println("ID" + "\t\t" + "Titulo" + "\t\t" + "Fecha Inicio");
+			System.out.println("------------------------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t\t" + rs.getString(2) + "\t\t" + rs.getString(3));
+			}
+		} else {
+			System.out.println("No hay cursos");
+		}
+		
+		System.out.println();
+		System.out.println();
+		
+		sql="SELECT * FROM estudiantes";
+		rs = statement.executeQuery(sql);
+		if(rs.isBeforeFirst()) {
+			System.out.println("-------------------ESTUDIANTES------------------");
+			System.out.println("------------------------------------------------");
+			System.out.println("ID" + "\t\t" + "Nombre" + "\t\t" + "ID del curso");
+			System.out.println("------------------------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t\t" + rs.getString(2) + "\t\t" + rs.getString(3));
+			}
+		}else {
+			System.out.println("No hay estudiantes");
+		}
+		
+		System.out.println("Pulse intro");
+		scn.nextLine();
+	}
+  
+	public static void main(String[] args){
+		try {
+			Class.forName("org.postgresql.Driver");
+			
+			String url = "jdbc:postgresql://localhost:5432/dia01";
+			String usuario = "postgres";
+			String password = "1234";
+			Connection con = DriverManager.getConnection(url, usuario, password);
+			
+			statement = con.createStatement();
+
+			scn = new Scanner(System.in);
+			boolean salir=false;
+			String orden;
+			
+			System.out.println("Bienvenido");
+			
+			do {
+				System.out.println("1.- Crear tablas");
+				System.out.println("2.- Añadir curso");
+				System.out.println("3.- Añadir estudiantes a curso");
+				System.out.println("4.- Ver todo");
+				System.out.println("0.- Salir");
+				orden = scn.nextLine();
+				switch(orden) {
+          case("1"):
+            crearTablas();
+            break;
+          case("2"):
+            crearCurso();
+            break;
+          case("3"):
+            crearEstudiante();
+            break;
+          case("4"):
+            verTodo();
+            break;
+          case("0"):
+            salir = true;
+            break;
+          default:
+            System.out.println("Orden mal introducida");
+            scn.nextLine();
+            break;
+				}
+			} while(!salir);
+			
+			System.out.println("Usted ha salido del programa");
+			con.close();
+		} catch(ClassNotFoundException e) {
+			System.out.println(e.getMessage());
+		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+}
