@@ -1,0 +1,337 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class ConsultaBD {
+
+	public static Connection connectDB() throws ClassNotFoundException, SQLException {
+		Class.forName("org.postgresql.Driver");
+		String url = "jdbc:postgresql://localhost:5432/dia01";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		return DriverManager.getConnection(url, usuario, password);
+	}
+
+	public static void crearTablas() throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		
+		Statement statement = con.createStatement();
+		String sentenciaSQL = "CREATE table if not exists curso ("
+				+ "id serial,"
+				+ "titulo varchar(100),"
+				+ "fechaIni date,"
+				+ "primary key(id))";
+		statement.execute(sentenciaSQL);
+		
+		sentenciaSQL = "CREATE table if not exists alumno ("
+				+ "id serial,"
+				+ "nombre varchar(100),"
+				+ "primary key(id))";
+		statement.executeUpdate(sentenciaSQL);
+		
+		sentenciaSQL = "CREATE table if not exists matriculas("
+				+ "id serial,"
+				+ "curso integer references curso(id) not null,"
+				+ "alumno integer references alumno(id) not null,"
+				+ "primary key(id))";
+		statement.executeUpdate(sentenciaSQL);
+		
+		statement.close();
+		con.close();
+	}
+
+	
+	public static String buildQueryAddNuevoCurso(String titulo, String fecha) {
+		return "INSERT INTO curso(titulo, fechaIni) VALUES ('" + titulo + "', " + "'" + fecha + "')";
+	}
+	
+	public static String buildQueryAddNuevoAlumno(String nombre) {
+		return "INSERT INTO alumno(nombre) VALUES ('" + nombre + "')";
+	}		
+	
+	public static void insertarCurso() throws SQLException, ClassNotFoundException {
+		
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.print("Título del curso: ");
+		String titulo = scn.nextLine();
+		
+		System.out.print("Fecha de inicio: ");
+		String fecha = scn.nextLine();
+
+		String sentenciaSQL = buildQueryAddNuevoCurso(titulo, fecha);
+		int ejecutada = statement.executeUpdate(sentenciaSQL);
+
+		if(ejecutada == 1) {
+			System.out.println("Inserción de curso realizada con éxito");
+    } else {
+			System.out.println("Inserción fallida");
+		}
+    
+		statement.close();
+		con.close();
+	}
+	
+	public static void insertarAlumno() throws SQLException, ClassNotFoundException {
+		
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.print("Nombre del alumno: ");
+		String nombre = scn.nextLine();
+		
+		String sentenciaSQL = buildQueryAddNuevoAlumno(nombre);
+		int ejecutada = statement.executeUpdate(sentenciaSQL);
+		
+		if(ejecutada == 1) {
+			System.out.println("Inserción de alumno realizada con éxito");
+		} else {
+			System.out.println("Inserción fallida");
+    }
+		
+		statement.close();
+		con.close();
+	}
+	
+	public static void printMenu() {
+		System.out.println("\tMENÚ");
+		System.out.println("------------------------------------");
+		System.out.println("1.- CREAR TABLAS");
+		System.out.println("2.- AÑADIR CURSO");
+		System.out.println("3.- AÑADIR ALUMNO");
+		System.out.println("4.- MATRICULAR ALUMNO");
+		System.out.println("5.- MOSTRAR CURSO Y ALUMNOS ASOCIADOS");
+		System.out.println("6.- MOSTRAR CURSOS ASOCIADOS AL ALUMNO" );
+		System.out.println("7.- SALIR");
+		System.out.print("Opción: ");
+	}
+	
+	public static String buildQueryBuscarAlumno(String id) {
+		return "SELECT id, nombre FROM alumno WHERE id = "+ id ;
+	}
+	
+	public static void mostrarTodosAlumnos() throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		String sentenciaSQL = "SELECT id, nombre FROM alumno ORDER BY id";
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		System.out.println("\t\tALUMNOS");
+		System.out.println("ID\tNOMBRE");
+		System.out.println("-------------------------------------------");
+		
+		if(!resultado.isBeforeFirst()) 
+			System.out.println("No hay resultados");
+		else
+			while(resultado.next()) {
+				System.out.println(resultado.getInt(1) + "\t" + resultado.getString(2));
+			}
+		
+		statement.close();
+		con.close();
+	}
+	
+	public static void mostrarAlumnosCurso(String id) throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		String sentenciaSQL = "SELECT a.id, a.nombre FROM alumno a "
+				+ "RIGHT JOIN matriculas m on a.id = m.alumno "
+				+ "RIGHT JOIN curso c on m.curso = c.id "
+				+ "WHERE c.id = " + id + " ORDER BY id";
+		
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		System.out.println("\t\tALUMNOS");
+		System.out.println("ID" + "\t" + "NOMBRE");
+		System.out.println("--------------------------------");
+		
+		if(!resultado.isBeforeFirst()) {
+			System.out.println("No hay resultados");
+    } else {
+			while(resultado.next()) {
+				System.out.println(resultado.getInt(1) + "\t" + resultado.getString(2));
+			}
+    }
+		
+		statement.close();
+		con.close();
+	}
+	
+	public static void mostrarTodosCursos() throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		String sentenciaSQL = "SELECT id, fechaini, titulo FROM curso ORDER BY id";
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		
+		System.out.println("\t\tCURSO");
+		System.out.println("ID" + "\t" + "FECHA" + "\t" + "TITULO");
+		System.out.println("-------------------------------------------");
+		
+		if(!resultado.isBeforeFirst()) {
+			System.out.println("No hay resultados");
+		} else {
+			while(resultado.next()) {
+				System.out.println(resultado.getInt(1) + "\t" + resultado.getDate(2) + "\t" + resultado.getString(3));
+			}
+    }
+		
+		statement.close();
+		con.close();
+	}
+	
+	private static void matricularAlumno() throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		
+		mostrarTodosAlumnos();
+		Statement statement = con.createStatement();
+		Scanner scn = new Scanner(System.in);
+		System.out.print("ID del Alumno: ");
+		String idAlumno = scn.nextLine();
+		String sentenciaSQL = buildQueryBuscarAlumno(idAlumno);
+		
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		
+		if(resultado.isBeforeFirst()) {
+			mostrarTodosCursos();
+			System.out.print("Matricular en el curso (ID): ");
+			String idCurso = scn.nextLine();
+			
+			sentenciaSQL = "INSERT INTO matriculas(curso,alumno) VALUES " + "(" + idCurso + "," + idAlumno + ")";
+			
+			int ejecutada = statement.executeUpdate(sentenciaSQL);
+			
+			if(ejecutada == 1) {
+				System.out.println("Matriculación del alumno " + idAlumno + " realizada con éxito");
+      } else {
+				System.out.println("Matriculación fallida");
+      }
+		} else {
+			System.out.println("No existe ningún alumno con ese id");
+    }
+		
+		statement.close();
+		con.close();
+	}
+	
+	private static void mostrarCurso() throws SQLException, ClassNotFoundException {
+		Connection con = connectDB();
+		
+		Statement statement = con.createStatement();
+		Scanner scn = new Scanner(System.in);
+		
+		mostrarTodosCursos();
+		System.out.print("ID del curso:");
+		String id = scn.nextLine();
+		
+		String sentenciaSQL = "SELECT id, fechaini, titulo FROM curso WHERE id = " + id ;
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		System.out.println("\t\tCURSO");
+		System.out.println("ID" + "\t" + "FECHA" + "\t" + "TITULO");
+		System.out.println("-------------------------------------------");
+		
+		if(!resultado.isBeforeFirst()) {
+			System.out.println("No hay resultados");
+		} else {
+			while(resultado.next()) {
+				System.out.println(resultado.getInt(1) + "\t" + resultado.getDate(2) + "\t" + resultado.getString(3));
+			}
+			mostrarAlumnosCurso(id);
+		}
+		
+		statement.close();
+		con.close();
+		
+	}
+	
+	public static void mostrarCursosAlumno() throws ClassNotFoundException, SQLException {
+		Connection con = connectDB();
+		Statement statement = con.createStatement();
+		
+		mostrarTodosAlumnos();
+		
+		Scanner scn = new Scanner(System.in);
+  	System.out.print("Id del alumno:");
+		String idAlumno = scn.nextLine();
+		
+		String sentenciaSQL = "SELECT c.id, c.fechaini, c.titulo FROM curso c"
+				+ " RIGHT JOIN matriculas m on m.curso = c.id "
+				+ " RIGHT JOIN alumno a on m.alumno = a.id "
+				+ "WHERE a.id = " + idAlumno;
+		
+		ResultSet resultado = statement.executeQuery(sentenciaSQL);
+		
+		System.out.println("ID" + "\t" + "FECHA" + "\t" + "TITULO");
+		System.out.println("-------------------------------------------");
+		
+		if(!resultado.isBeforeFirst()) {
+			System.out.println("No hay resultados");
+		} else {
+			while(resultado.next()) {
+				System.out.println(resultado.getInt(1) + "\t" + resultado.getDate(2) + "\t" + resultado.getString(3));
+			}
+		}
+    
+		statement.close();
+		con.close();
+	}
+  
+	public static void main(String[] args) {
+		String opcion = "";
+		boolean salir = false;
+		
+		Scanner scn;
+		do {
+			try {
+				scn = new Scanner(System.in);
+				printMenu();
+				opcion = scn.nextLine();
+				switch(opcion) {
+					case "1":
+						crearTablas();
+						break;
+					case "2":
+						insertarCurso();
+						break;
+					case "3":
+						insertarAlumno();
+						break;
+					case "4":
+						matricularAlumno();
+						break;
+					case "5":
+						mostrarCurso();
+						break;
+					case "6":
+						mostrarCursosAlumno();
+						break;
+					case "7":
+						salir = true;
+						System.out.println("Saliendo...");
+						scn.close();
+						break;
+					default:
+						System.out.println("Opción incorrecta");
+						break;
+				}
+			} 
+			catch (SQLException e) {
+					System.out.println(e.getMessage());
+			}
+			catch (ClassNotFoundException e) {
+				System.out.println(e.getMessage());
+			}
+		} while (!salir);
+
+	}
+}
