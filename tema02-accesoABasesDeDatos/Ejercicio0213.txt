@@ -1,0 +1,28 @@
+
+	/*Consulta
+	 * SELECT (SELECT cast(count(m.usuario ) as decimal) FROM matriculas m) / ( SELECT cast(count(c.id) as decimal) FROM cursos c);
+	 */
+   
+	private static void calcularMediaAlumnosCursos() {
+		try {
+			Connection con = getConnection();
+			Statement statement = con.createStatement();
+
+			String sentenciaSQL = "select CalcMedia()";
+			
+			ResultSet rs = statement.executeQuery(sentenciaSQL);
+			
+			if(!rs.isBeforeFirst()) {
+				System.out.println("Empty");
+			}
+			else {
+				if (rs.next()) {
+					System.out.println("La media es : " + rs.getString(1));
+				}
+			}
+			
+			con.close();
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
