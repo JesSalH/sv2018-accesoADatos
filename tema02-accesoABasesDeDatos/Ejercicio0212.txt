@@ -1,0 +1,28 @@
+CREATE OR REPLACE FUNCTION CantidadAlumnosCurso (idCurso INT) RETURNS INTEGER AS
+$$
+DECLARE
+	cantidad INTEGER;
+BEGIN
+	SELECT COUNT(*) INTO cantidad FROM cursoXalumno WHERE id = idCurso;
+	RETURN cantidad;
+END;
+$$
+LANGUAGE plpgsql;
+
+public static void calcularCantidadAlumnosXCurso(Scanner sc, Connection con) {
+		
+		System.out.println("Introduzca el id del curso: ");
+		int idCurso = Integer.parseInt(sc.nextLine());
+		
+		try {
+			
+			CallableStatement cStmt = con.prepareCall("{call cantidadalumnoscurso(?)}");
+			cStmt.registerOutParameter(1, Types.INTEGER);
+			cStmt.setInt(1, idCurso);
+			cStmt.execute();
+      
+			System.out.println("Número de alumnos en el curso (" + idCurso +"): " + cStmt.getInt(1));
+		} catch(SQLException e) {
+			System.out.println("Sql error: " + e.getMessage());
+		}
+}
