@@ -1,0 +1,28 @@
+CREATE OR REPLACE FUNCTION ListaAlumnos(comodin int)
+RETURNS SETOF usuarios AS '
+SELECT u.id, u.nombre
+FROM usuarios_matricula_cursos m, cursos c, usuarios u
+WHERE m.id_cursos=c.id
+	AND m.id_usuarios=u.id
+	AND c.id=comodin;
+' LANGUAGE sql;
+
+
+public static void SaberAlumnosXCurso(Statement statement, Scanner scan, Connection con) throws
+ClassNotFoundException, SQLException{
+	
+	Scanner scan10 = new Scanner(System.in);
+	System.out.println("Introduce la id del curso");
+	int id_user = scan10.nextInt();
+	
+	PreparedStatement pStmt = con.prepareStatement("SELECT listaAlumnos("+id_user+")");
+	ResultSet rs5 = pStmt.executeQuery();
+	
+	if(rs5.next()!=false) {
+		System.out.println(rs5.getString(1));
+	  while(rs5.next())	{
+		  System.out.println(rs5.getString(1));
+	  }
+	}
+	scan10.close();
+}
