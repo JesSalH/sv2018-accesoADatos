@@ -1,0 +1,11 @@
+CREATE DATABASE pruebaOR;
+
+CREATE TABLE usuarios(
+	id VARCHAR(5) PRIMARY KEY,
+	nombre TEXT,
+	codPais VARCHAR(2),
+	diaNac INT,
+	mesNac INT,
+	anyoNac INT,
+	valoracion NUMERIC(3,1)
+);
