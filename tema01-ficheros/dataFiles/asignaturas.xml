@@ -1,0 +1,20 @@
+<asignaturas>
+    <asignatura id="ad">
+        <nombre>Acceso a Datos</nombre>
+        <cicloFormativo>D.A.M.</cicloFormativo>
+        <curso>Segundo</curso>
+        <profesor>Nacho</profesor>
+    </asignatura>
+    <asignatura id="int">
+        <nombre>Interfaces</nombre>
+        <cicloFormativo>D.A.M.</cicloFormativo>
+        <curso>Segundo</curso>
+        <profesor>Antonio</profesor>
+    </asignatura>
+    <asignatura id="lm">
+        <nombre>Lenguajes de marcas</nombre>
+        <cicloFormativo>ASIR</cicloFormativo>
+        <curso>Primero</curso>
+        <profesor>Fernando</profesor>
+    </asignatura>
+</asignaturas>
