@@ -1,0 +1,17 @@
+<coches>
+	<coche>
+		<marca>Seat</marca>
+		<modelo>Ibiza Special</modelo>
+		<cilindrada>1000</cilindrada>
+	</coche>
+	<coche>
+		<modelo>Toledo 1.9 TDI</modelo>
+		<marca>Seat</marca>
+		<cilindrada>1900</cilindrada>
+	</coche>
+	<coche>
+		<cilindrada>1800</cilindrada>
+		<marca>Honda</marca>
+		<modelo>Civic VTec Executive</modelo>
+	</coche>
+</coches>
