@@ -1,0 +1,18 @@
+<vehiculos>
+    <vehiculo id="1">
+        <marca>Ford</marca>
+        <modelo>Focus</modelo>
+    </vehiculo>
+    <vehiculo id="2">
+        <marca>Peugeot</marca>
+        <modelo>205 Rallye</modelo>
+    </vehiculo>
+    <vehiculo id="3">
+        <marca>Alfa Romeo</marca>
+        <modelo>75</modelo>
+    </vehiculo>
+    <vehiculo id="4">
+        <marca>Mercedes Benz</marca>
+        <modelo>SLS</modelo>
+    </vehiculo>
+</vehiculos>

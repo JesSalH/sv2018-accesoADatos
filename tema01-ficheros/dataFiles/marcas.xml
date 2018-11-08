@@ -1,0 +1,6 @@
+<marcas>
+    <marca nombre="Ford" pais="Estados Unidos" anyo="1903" />
+    <marca nombre="Alfa Romeo" pais="Italia" anyo="1910" />
+    <marca nombre="Mercedes Benz" pais="Alemania" anyo="1926" />
+    <marca nombre="Seat" pais="España" anyo="1950" />
+</marcas>
