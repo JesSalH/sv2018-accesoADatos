@@ -1,0 +1,17 @@
+CREATE TYPE horarioTrabajo AS (horaInicial time, horaFinal time);
+
+CREATE TABLE tareas(
+	id serial primary key,
+	descripcion text,
+	fechaPrevista date,
+	fechaAnotado timestamp,
+	prioridad numeric(1) check (prioridad >=1 and prioridad <=5),
+	tiempoEmpleado horarioTrabajo);
+
+INSERT INTO tareas (descripcion, fechaPrevista, fechaAnotado, prioridad, tiempoEmpleado) 
+	VALUES ('Prueba', TO_DATE('10/12/2006', 'DD/MM/YYYY'),
+			TO_TIMESTAMP('11/11/2007 14:50:55', 'DD/MM/YYYY HH24:MI:SS'), 1,
+		  (TO_TIMESTAMP('10:10:05', 'HH24:MI:SS'), TO_TIMESTAMP('22:11:15', 'HH24:MI:SS')));
+																		
+SELECT * FROM tareas;
+SELECT ((tiempoEmpleado).horaInicial -  (tiempoEmpleado).horaFinal) FROM tareas;
