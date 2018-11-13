@@ -1,0 +1,17 @@
+ALTER TABLE tareas ADD comentarios text[];
+
+INSERT INTO tareas(descripcion, fechaPrevista, fechaAnotado,prioridad,tiempoEmpleado,categoria,comentarios) 
+  VALUES('Prueba de descripcion', TO_DATE('08/11/1996', 'DD/MM/YYYY'), 
+          TO_TIMESTAMP('2017-03-31 09:30:20','YYYY-MM-DD HH:MI:SS'), 3,
+	        ('23:00:30','01:30:52'), 'trabajo', ARRAY['Paco','Javier','Pedro','Juan','Pepe']
+);																	 
+																 
+INSERT INTO tareas(descripcion, fechaPrevista, fechaAnotado,prioridad,tiempoEmpleado,categoria,comentarios) 
+  VALUES('aqui van coches', TO_DATE('08/11/1996', 'DD/MM/YYYY'),
+          TO_TIMESTAMP('2017-03-31 09:30:20','YYYY-MM-DD HH:MI:SS'), 3,
+	        ('23:00:30','01:30:52'), 'trabajo', ARRAY['Mercedes','Fiat','Seat Panda']
+);
+
+SELECT COMENTARIOS FROM TAREAS;	   
+SELECT COMENTARIOS[2] FROM TAREAS;
+SELECT COMENTARIOS[2:4] FROM TAREAS;
