@@ -1,0 +1,16 @@
+CREATE TYPE categoria AS ENUM
+( 'Trabajo', 'Ocio', 'Familia');
+															   
+ALTER TABLE tareas ADD category categoria;
+
+INSERT INTO tareas (descripcion, fechaPrevista, fechaAnotado, priority, tiempoEmpleado, category) 
+VALUES ('prueba 5','19/08/2018', '20/10/2012 17:17:33', 3, ('18:20:15','19:45:45'), 'Familia');
+															   
+INSERT INTO tareas (descripcion, fechaPrevista, fechaAnotado, priority, tiempoEmpleado, category) 
+VALUES ('prueba 5','19/08/2018', '20/10/2012 17:17:33', 3, ('18:20:15','19:45:45'), 'otro');
+
+ERROR:  la sintaxis de entrada no es válida para el enum categoria: «otro»
+LINE 2: ... '20/10/2012 17:17:33', 3, ('18:20:15','19:45:45'), 'otro');
+                                                               ^
+SQL state: 22P02
+Character: 184
