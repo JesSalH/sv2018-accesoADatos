@@ -1,0 +1,4 @@
+CREATE TABLE tareas(id BIGSERIAL PRIMARY KEY, descripcion TEXT, fechaPrevista DATE, fechaAnotado TIMESTAMP);
+
+INSERT INTO tareas(descripcion, fechaPrevista, fechaAnotado) 
+  VALUES('Prueba de descripcion', '1995-11-08','1995-11-08 10:23:54');
