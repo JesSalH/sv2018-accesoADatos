@@ -1,0 +1,1220 @@
+                           /** PRIMER ARCHIVO LLAMADO ManejadorBaseDatos.java ***/
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Scanner;
+
+public class ManejadorBaseDatos {
+	Scanner sc = new Scanner(System.in);
+	String url = "jdbc:postgresql://localhost:5432/gestionpersonal";
+	String usuario = "postgres";
+	String password = "1234";
+	
+	public ManejadorBaseDatos() 
+		throws ClassNotFoundException, SQLException
+	{
+		checkDataBaseIsCreated();
+	}
+	
+	private void checkDataBaseIsCreated() throws 
+		ClassNotFoundException, SQLException {
+		Class.forName("org.postgresql.Driver");
+		String url = "jdbc:postgresql://localhost:5432/";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		Connection con = DriverManager.getConnection(url, usuario, password);
+		Statement statement = con.createStatement();
+		
+		String sentenciaSQL = 
+				"SELECT * FROM pg_database WHERE datname LIKE 'gestionpersonal';";
+		
+		ResultSet rs = statement.executeQuery(sentenciaSQL);
+		
+		if (!rs.next()) {
+			boolean exit = false;
+			System.out.println("No se ha encontrado base de datos ");
+			do
+			{
+				System.out.println("Crear base de datos automaticamente? (si/no)");
+				String answer = sc.nextLine();
+				
+				if (answer.equals("si")) 
+				{
+					createDataBase();
+					exit = true;
+				}
+				else if(answer.equals("no"))
+				{
+					System.out.println("No se creó la base de datos");
+					System.exit(0);
+				}
+				else
+				{
+					System.out.println("Error de escritura prueba con (si/no)");
+				}
+			}
+			while(!exit);
+		}
+		else
+		{
+			System.out.println("Se ha encontrado la base de datos ");
+			boolean exit = false;
+			do
+			{
+				System.out.println("Borrar y crear un nueva base de datos "
+						+ "automaticamente? (si/no)");
+				String answer = sc.nextLine();
+				
+				if (answer.equals("si")) 
+				{
+					createDataBase();
+					exit = true;
+				}
+				else if(answer.equals("no"))
+				{
+					checkTablesAreCreated();
+					exit = true;
+				}
+				else
+				{
+					System.out.println("Error de escritura prueba con (si/no)");
+				}
+			}
+			while(!exit);
+			
+		}
+	}
+	
+	private void checkTablesAreCreated() 
+		throws ClassNotFoundException, SQLException {
+		Connection con = conection();
+		Statement statement = con.createStatement();
+		
+		String sentenciaSQL = 
+				"SELECT count(*) " + 
+				"FROM information_schema.tables " + 
+				"WHERE table_type = 'BASE TABLE' " + 
+				"AND table_name = 'personas' " + 
+				"OR table_name = 'clientes' " + 
+				"OR table_name = 'funcionarios';";
+		
+		ResultSet rs = statement.executeQuery(sentenciaSQL);
+		rs.next();
+		if(rs.getInt(1) != 3)
+		{
+			System.out.println("No se ha encontrado tablas ");
+			System.out.println("Crear tablas automaticamente? (si/no)");
+			String answer = sc.nextLine();
+			
+			if (answer.equals("si")) {
+				createTables();
+			}
+			else
+			{
+				System.out.println("No se crearon las tablas");
+				System.exit(0);
+			}
+		}
+		else {
+			System.out.println("Tablas cargadas con exito");
+		}
+		
+	}
+	
+	public void createTables() 
+			throws ClassNotFoundException, SQLException
+	{
+		Connection con = conection();
+		Statement statement = con.createStatement();
+		
+		String sentenciaSQL = 
+			"DROP TABLE IF EXISTS personas CASCADE; " + 
+			"CREATE TABLE personas( " + 
+			"	numero SERIAL PRIMARY KEY, " + 
+			"	nombre TEXT, " + 
+			"	apellidos TEXT, " + 
+			"	direccion TEXT, " + 
+			"	telefono INT, " + 
+			"	fecha_nacim DATE " + 
+			"); " + 
+			
+			"DROP TYPE IF EXISTS estadoType CASCADE; " + 
+			"CREATE TYPE estadoType " + 
+			"AS ENUM ( 'activo', 'pendiente', 'inactivo'); " + 
+			
+			"DROP TYPE IF EXISTS tipoClienteType CASCADE; " + 
+			"CREATE TYPE tipoClienteType " + 
+			"AS ENUM ('normal', 'premium'); " + 
+
+			"DROP TABLE IF EXISTS clientes CASCADE; " + 
+			"CREATE TABLE clientes( " + 
+			"	NroCuenta TEXT, " + 
+			"	estado estadoType, " + 
+			"	tipoCliente tipoClienteType " + 
+			") INHERITS(personas); " + 
+
+			"DROP TYPE IF EXISTS cargoType CASCADE; " + 
+			"CREATE TYPE cargoType AS ( " + 
+			"	grupo CHAR(2),  " + 
+			"	codigo TEXT " + 
+			"); " + 
+
+			"DROP TABLE IF EXISTS funcionarios CASCADE; " + 
+			"CREATE TABLE funcionarios( " + 
+			"	cargo cargoType, " + 
+			"	departamento TEXT, " + 
+			"	fecha_ingreso date " + 
+			")INHERITS(personas);";
+		
+		try {
+			statement.executeUpdate(sentenciaSQL);
+			
+		} catch (Exception e) {
+			System.out.println("Problemas creando las tablas");
+		} finally {
+			con.close();
+		}
+		
+		String pruebaPersonas = "INSERT INTO personas"
+				+ "(nombre,apellidos,direccion,telefono,fecha_nacim) "
+				+ "VALUES ('Persona', 'Prueba', 'C// Inventada 123',"
+				+ "123123123, '12/01/1996');";
+		String pruebaCliente = "INSERT INTO clientes(nombre,apellidos,direccion,"
+				+ "telefono,fecha_nacim,nrocuenta,estado,tipocliente) " 
+				+ "VALUES ('Cliente', 'Prueba', 'C// Inventada 123',"
+				+ "123123123, '12/01/1996', 'ES6621000418401234567891', "
+				+ "'activo', 'normal');";
+		String pruebaFuncionario = "INSERT INTO funcionarios(nombre,"
+				+ "apellidos,direccion,telefono,fecha_nacim,cargo,"
+				+ "departamento,fecha_ingreso) " 
+				+ "VALUES ('Funcionario', 'Prueba', 'C// Inventada 123',"
+				+ "123123123, '12/01/1996', ('A1','AFC01'), 'Marketing', "
+				+ "'05/11/2018');";
+		
+		update(pruebaPersonas);
+		update(pruebaCliente);
+		update(pruebaFuncionario);
+	}
+
+	private void createDataBase() throws 
+	ClassNotFoundException, SQLException 
+	{
+		System.out.println("Creando base de datos GestionPersonal");
+		
+		Class.forName("org.postgresql.Driver");
+		String url = "jdbc:postgresql://localhost:5432/";
+		String usuario = "postgres";
+		String password = "1234";
+		
+		Connection con = DriverManager.getConnection(url, usuario, password);
+		Statement statement = con.createStatement();
+		
+		String sentenciaSQL = "DROP DATABASE IF EXISTS gestionpersonal; "
+				+ "CREATE DATABASE gestionpersonal;";
+		
+		try {
+			int errorCode = statement.executeUpdate(sentenciaSQL);
+			
+			if (errorCode == 0) {
+				System.out.println("Se ha creado con exito la base de datos");
+			}
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		} finally {
+			con.close();
+		}
+		
+		createTables();
+	}
+	
+	private Connection conection() throws
+	ClassNotFoundException, SQLException
+	{
+		Class.forName("org.postgresql.Driver");
+		return DriverManager.getConnection(url, usuario, password);
+	}
+	
+	
+	public void update(String sentenceSQL) 
+		throws ClassNotFoundException, SQLException
+	{
+		Connection con = conection();
+		Statement statement = con.createStatement();
+		
+		try {
+			statement.executeUpdate(sentenceSQL);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+		finally {
+			con.close();
+		}
+	}
+	
+	public ResultSet select(String sentenciaSQL) 
+		throws ClassNotFoundException, SQLException
+	{
+		Connection con = conection();
+		Statement statement = con.createStatement();
+		
+		ResultSet rs = statement.executeQuery(sentenciaSQL);
+		
+		con.close();
+		
+		return rs;
+	}
+}
+                           
+                           
+                           
+                           
+                           /** SEGUNDO ARCHIVO LLAMADO Ejercicio0310.java ***/
+
+import java.math.BigInteger;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Scanner;
+
+public class Ejercicio0310 {
+	public static Scanner sc = new Scanner(System.in);
+	
+	public static void main (String[] args) throws ClassNotFoundException, SQLException{
+		ManejadorBaseDatos manejador = new ManejadorBaseDatos();
+		
+		boolean exit = false;
+		
+		do
+		{
+			ShowMenu();
+			switch (getOption()) {
+			case 1:
+				addPersona(manejador);
+				break;
+			case 2:
+				addCliente(manejador);		
+				break;
+			case 3:
+				addFuncionario(manejador);			
+				break;
+			case 4:
+				modifyPersona(manejador);			
+				break;
+			case 5:
+				modifyCliente(manejador);			
+				break;
+			case 6:
+				modifyFuncionario(manejador);			
+				break;
+			case 7:
+				showPersonas(manejador);			
+				break;
+			case 8:
+				showClientes(manejador);			
+				break;
+			case 9:
+				showFuncionarios(manejador);			
+				break;
+			case 0:
+				exit = true;
+				break;
+			default:
+				break;
+			}
+		}
+		while(!exit);
+	}
+	
+	private static int getOption() {
+		System.out.println("Option:");
+		int option = sc.nextInt();
+		sc.nextLine();
+		return option;
+	}
+
+	private static void ShowMenu()
+	{
+		System.out.println("1.-Añadir persona");
+		System.out.println("2.-Añadir cliente");
+		System.out.println("3.-Añadir funcionario");
+		System.out.println("4.-Modificar persona");
+		System.out.println("5.-Modificar cliente");
+		System.out.println("6.-Modificar funcionario");
+		System.out.println("7.-Ver personas");
+		System.out.println("8.-Ver clientes");
+		System.out.println("9.-Ver funcionarios");
+		System.out.println("0.-Salir");
+	}
+	
+	
+	private static void addPersona(ManejadorBaseDatos manejador) 
+			throws ClassNotFoundException, SQLException 
+		{
+			String[] persona = getPersonaData(manejador);
+			String nombre = persona[0];
+			String apellidos = persona[1];
+			String direccion = persona[2];
+			String telefono = persona[3];
+			String fecha_nac = persona[4];
+			
+			String sentenceSQL = "INSERT INTO personas("
+					+ "nombre,apellidos,direccion,telefono,fecha_nacim) " 
+					+ "VALUES ('"+nombre+"', '"+apellidos+"', "
+					+ "'"+direccion+"',"+telefono+", '"+fecha_nac+"');";
+			
+			manejador.update(sentenceSQL);
+		}
+
+	private static void addCliente(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		String[] persona = getPersonaData(manejador);
+		String nombre = persona[0];
+		String apellidos = persona[1];
+		String direccion = persona[2];
+		String telefono = persona[3];
+		String fecha_nac = persona[4];
+		
+		System.out.println("Número de cuenta: ");
+		String nrocuenta = sc.nextLine();
+		while(nrocuenta.equals(""))
+		{
+			System.out.println("Numero de cuenta vacío");
+			System.out.println("Número de cuenta: ");
+			nrocuenta = sc.nextLine();
+		}
+		
+		String estadocuenta = "pendiente";
+		
+		if(!ibanTest(nrocuenta))
+		{
+			System.out.println("IBAN incorrecto la cuenta pasa a estado "
+					+ "pendiente");
+		}
+		else
+		{
+			boolean exit = false;
+			do
+			{
+				System.out.println("Estados de las cuentas");
+				System.out.println("Activa: 1 ");
+				System.out.println("Pendiente: 2 ");
+				System.out.println("Inactiva: 3 ");
+				System.out.println("Estado de la cuenta actual: ");
+				String tipoCliente = sc.nextLine();
+				
+				try
+				{
+					int n = Integer.parseInt(tipoCliente);
+					switch(n)
+					{
+						case 1:
+							estadocuenta = "activo";
+							exit = true;
+							break;
+						case 2:
+							estadocuenta = "pendiente";
+							exit = true;
+							break;
+						case 3:
+							estadocuenta = "inactivo";
+							exit = true;
+							break;
+						default:
+							System.out.println("Try with 1, 2 or 3");
+							break;
+					}
+				}
+				catch(Exception e)
+				{
+					System.out.println("Incorrect number");
+					
+				}
+			}while(!exit);
+		}
+		
+		String tipocliente = "normal";
+		boolean exit = false;
+		do
+		{
+			System.out.println("Tipos de cliente");
+			System.out.println("Normal: 1 ");
+			System.out.println("Premium: 2 ");
+			System.out.println("Tipo cliente actual:  ");
+			String tipoCliente = sc.nextLine();
+			
+			try
+			{
+				int n = Integer.parseInt(tipoCliente);
+				switch(n)
+				{
+					case 1:
+						tipocliente = "normal";
+						exit = true;
+						break;
+					case 2:
+						tipocliente = "premium";
+						exit = true;
+						break;
+					default:
+						System.out.println("Try with 1 or 2");
+						break;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Incorrect number");
+				
+			}
+		}while(!exit);
+		
+		String sentenceSQL = "INSERT INTO clientes(nombre,apellidos,direccion,"
+				+ "telefono,fecha_nacim,nrocuenta,estado,tipocliente) " 
+				+ "VALUES ('"+nombre+"', '"+apellidos+"', '"+direccion+"',"
+				+ ""+telefono+", '"+fecha_nac+"',"
+				+ "'"+nrocuenta+"','"+estadocuenta+"','"+tipocliente+"');";
+		
+		manejador.update(sentenceSQL);
+	}
+	
+	private static void addFuncionario(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		String[] persona = getPersonaData(manejador);
+		String nombre = persona[0];
+		String apellidos = persona[1];
+		String direccion = persona[2];
+		String telefono = persona[3];
+		String fecha_nac = persona[4];
+		
+		System.out.println("Grupo del cargo: ");
+		String grupo = sc.nextLine();
+		while(grupo.equals("") || !(grupo.equals("A1") || grupo.equals("A2") || 
+			grupo.equals("C1") || grupo.equals("C2") ||grupo.equals("AP")))
+		{
+			System.out.println("Grupo de cargo incorrecto o vacío");
+			System.out.println("Grupo del cargo: ");
+			grupo = sc.nextLine();
+		}
+		
+		System.out.println("Código del cuerpo: ");
+		String codigo = sc.nextLine();
+		while(codigo.equals("") || codigo.length() != 5)
+		{
+			System.out.println("El código del cuerpo no puede estar vacío y "
+				+ "tiene que contener 5 digitos");
+			System.out.println("Código del cuerpo: ");
+			codigo = sc.nextLine();
+		}
+		
+		System.out.println("Departamento: ");
+		String departamento = sc.nextLine();
+		while(departamento.equals(""))
+		{
+			System.out.println("El departamento no puede estar vacío");
+			System.out.println("Departamento: ");
+			departamento = sc.nextLine();
+		}
+		
+		boolean exit = false;
+		String fecha_ingreso;
+		do
+		{
+			System.out.println("Fecha Ingreso (dd/MM/yyyy): ");
+			fecha_ingreso = sc.nextLine();
+			try {
+				SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+				formatter.parse(fecha_ingreso);
+				exit = true;
+			}
+			catch (Exception e){
+				System.out.println("Error con la fecha prueba con (dd/MM/yyyy)");
+			}
+		}
+		while(!exit);
+		
+		String sentenceSQL = "INSERT INTO funcionarios(nombre,apellidos,"
+				+ "direccion, telefono,fecha_nacim, cargo, departamento, "
+				+ "fecha_ingreso) "
+				+ "VALUES ('"+nombre+"', '"+apellidos+"', '"+direccion+"',"
+				+ ""+telefono+",'"+fecha_nac+"',('"+grupo+"','"+codigo+"'),"
+				+ "'"+departamento+"','"+fecha_ingreso+"');";
+		
+		manejador.update(sentenceSQL);
+	}
+	
+	private static void modifyPersona(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		showPersonas(manejador);
+		
+		System.out.println("Numero de usuario a modificar: ");
+		int line = sc.nextInt();
+		sc.nextLine();
+		
+		String personaActual[] = getPersona(manejador, line).split("#");
+		
+		String[] persona = getPersonaDataModify(manejador, personaActual);
+		String nombre = persona[0];
+		String apellidos = persona[1];
+		String direccion = persona[2];
+		String telefono = persona[3];
+		String fecha_nacim = persona[4];
+		
+		String numero = personaActual[0];
+		
+		String sentenceSQL = "UPDATE personas SET nombre = '"+nombre+"',"
+				+ "apellidos = '"+apellidos+"',direccion = '"+direccion+"',"
+				+ "telefono = "+telefono+",fecha_nacim = '"+fecha_nacim+"' "
+				+ "WHERE numero = "+numero+";";
+		
+		manejador.update(sentenceSQL);
+	}
+	
+	private static void modifyCliente(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		showClientes(manejador);
+		System.out.println("Numero de cliente a modificar: ");
+		int line = sc.nextInt();
+		sc.nextLine();
+		
+		String clienteActual[] = getCliente(manejador, line).split("#");
+		String personaActual[] = {clienteActual[0],clienteActual[1],clienteActual[2]
+			,clienteActual[3],clienteActual[4],clienteActual[5]};
+		
+		
+		String[] persona = getPersonaDataModify(manejador, personaActual);
+		String nombre = persona[0];
+		String apellidos = persona[1];
+		String direccion = persona[2];
+		String telefono = persona[3];
+		String fecha_nacim = persona[4];
+		
+		String numero = clienteActual[0];
+		String nrocuenta = clienteActual[6];
+		String estado = clienteActual[7];
+		String tipocliente = clienteActual[8];
+		
+		boolean exit = false;
+		do
+		{
+			System.out.println("Número de cuenta ("+nrocuenta+"): ");
+			String newNrocuenta = sc.nextLine();
+			if(newNrocuenta.equals(""))
+			{
+				exit = true;
+			}
+			else if(ibanTest(newNrocuenta))
+			{
+				nrocuenta = newNrocuenta;
+				exit = true;
+			}
+			else
+			{
+				System.out.println("Numero de iban incorrecto");
+			}
+			
+		}
+		while(!exit);
+		
+		
+		exit = false;
+		do
+		{
+			System.out.println("Estados de las cuentas");
+			System.out.println("Activa: 1 ");
+			System.out.println("Pendiente: 2 ");
+			System.out.println("Inactiva: 3 ");
+			System.out.println("Estado de la cuenta actual ("+estado+"): ");
+			String tipoCliente = sc.nextLine();
+			
+			if(!tipoCliente.equals(""))
+			{
+				try
+				{
+					int n = Integer.parseInt(tipoCliente);
+					switch(n)
+					{
+						case 1:
+							estado = "activo";
+							exit = true;
+							break;
+						case 2:
+							estado = "pendiente";
+							exit = true;
+							break;
+						case 3:
+							estado = "inactivo";
+							exit = true;
+							break;
+						default:
+							System.out.println("Try with 1, 2 , 3 or press enter");
+							break;
+					}
+				}
+				catch(Exception e)
+				{
+					System.out.println("Incorrect number");
+				}
+			}
+			else
+			{
+				exit = true;
+			}
+			
+		}while(!exit);
+		
+		exit = false;
+		do
+		{
+			System.out.println("Tipos de cliente");
+			System.out.println("Normal: 1 ");
+			System.out.println("Premium: 2 ");
+			System.out.println("Tipo cliente actual ("+tipocliente+"):  ");
+			String tipoCliente = sc.nextLine();
+			if(!tipoCliente.equals(""))
+			{
+				try
+				{
+					int n = Integer.parseInt(tipoCliente);
+					switch(n)
+					{
+						case 1:
+							tipocliente = "normal";
+							exit = true;
+							break;
+						case 2:
+							tipocliente = "premium";
+							exit = true;
+							break;
+						default:
+							System.out.println("Try with 1 , 2 or press enter");
+							break;
+					}
+				}
+				catch(Exception e)
+				{
+					System.out.println("Incorrect number");
+				}
+			}
+			else
+			{
+				exit = true;
+			}
+		}while(!exit);
+		
+		String sentenceSQL = "UPDATE clientes SET nombre = '"+nombre+"',"
+				+ "apellidos = '"+apellidos+"',direccion = '"+direccion+"',"
+				+ "telefono = "+telefono+",fecha_nacim = '"+fecha_nacim+"',"
+				+ "nrocuenta = '"+nrocuenta+"',estado = '"+estado+"',"
+				+ "tipocliente = '"+tipocliente+"' WHERE numero = "+numero+";";
+		
+		manejador.update(sentenceSQL);
+	}
+	
+	private static void modifyFuncionario(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		showFuncionarios(manejador);
+		
+		System.out.println("Numero de funcionario a modificar: ");
+		int line = sc.nextInt();
+		sc.nextLine();
+		
+		String funcionarioActual[] = getFuncionario(manejador, line).split("#");
+		
+		String personaActual[] = {funcionarioActual[0],funcionarioActual[1],funcionarioActual[2]
+				,funcionarioActual[3],funcionarioActual[4],funcionarioActual[5]};
+			
+			
+		String[] persona = getPersonaDataModify(manejador, personaActual);
+		String nombre = persona[0];
+		String apellidos = persona[1];
+		String direccion = persona[2];
+		String telefono = persona[3];
+		String fecha_nacim = persona[4];
+		
+		String numero = funcionarioActual[0];
+		String cargo = funcionarioActual[6];
+		String cargoParts[] = cargo.substring(1, cargo.length()- 1).split(",");
+		String grupo = cargoParts[0];
+		String codigo = cargoParts[1];
+		String departamento = funcionarioActual[7];
+		String fecha_ingreso = funcionarioActual[8];
+		
+		boolean exit = false;
+		do
+		{
+			System.out.println("Grupo del cargo ("+grupo+"): ");
+			String newGrupo = sc.nextLine();
+			if(newGrupo.equals(""))
+			{
+				exit = true;
+			}
+			else if ((newGrupo.equals("A1") || newGrupo.equals("A2") || 
+				newGrupo.equals("C1") || newGrupo.equals("C2") || 
+				newGrupo.equals("AP")))
+			{
+				grupo = newGrupo;
+				exit = true;
+			}
+			else
+			{
+				System.out.println("Grupo incorrecto, "
+					+ "pon un grupo correcto o pulsa enter");
+			}
+		}
+		while(!exit);
+		
+		exit = false;
+		do
+		{
+			System.out.println("Código del cuerpo ("+codigo+"): ");
+			String newCodigo = sc.nextLine();
+			if(newCodigo.equals(""))
+			{
+				exit = true;
+			}
+			else if(newCodigo.length() == 5)
+			{
+				codigo = newCodigo;
+				exit = true;
+			}
+			else
+			{
+				System.out.println("Código incorrecto");
+			}
+		}
+		while(!exit);
+		System.out.println("Departamento ("+departamento+"): ");
+		String newDepartamento = sc.nextLine();
+		if(!newDepartamento.equals(""))
+		{
+			departamento = newDepartamento;
+		}
+		
+		exit = false;
+		do
+		{
+			System.out.println("Fecha Ingreso ("+fecha_ingreso+"): ");
+			String newFecha_ingreso = sc.nextLine();
+			if(!newFecha_ingreso.equals(""))
+			{
+				try {
+					SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+					fecha_ingreso = formatter.parse(newFecha_ingreso).toString();
+					exit = true;
+				}
+				catch (Exception e){
+					System.out.println("Error con la fecha prueba con (dd/MM/yyyy) "
+						+ "o pulsa enter");
+				}
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+		while(!exit);
+		
+		String sentenceSQL = "UPDATE funcionarios SET nombre = '"+nombre+"',"
+				+ "apellidos = '"+apellidos+"',direccion = '"+direccion+"',"
+				+ "telefono = "+telefono+",fecha_nacim = '"+fecha_nacim+"',"
+				+ "cargo = ('"+grupo+"','"+codigo+"'),"
+				+ "departamento = '"+departamento+"',"
+				+ "fecha_ingreso = '"+fecha_ingreso+"' "
+				+ "WHERE numero = "+numero+";";
+		
+		manejador.update(sentenceSQL);
+	}
+	
+	private static void showPersonas(ManejadorBaseDatos manejador) 
+		throws SQLException, ClassNotFoundException 
+	{
+		ResultSet rs = manejador.select("SELECT nombre,apellidos,direccion,"
+				+ "telefono,fecha_nacim FROM ONLY personas;");
+		if (!rs.next()) {
+			System.out.println("No data found");
+		}
+		else {
+			DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+			
+			System.out.println("Personas");
+			int cont = 1;
+			do
+			{	
+				System.out.println(cont+".-"+rs.getString(1) + " " + rs.getString(2)
+						+ ", " + rs.getString(3) + ", " + rs.getInt(4) 
+						+ ", " + df.format(rs.getDate(5)).toString());
+				cont++;
+			}
+			while(rs.next());
+			System.out.println();
+		}
+		rs.close();
+	}
+	
+	private static void showClientes(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		ResultSet rs = manejador.select("SELECT nombre,apellidos,direccion,"
+				+ "telefono,fecha_nacim, nrocuenta, estado,tipocliente FROM clientes;");
+		if (!rs.next()) {
+			System.out.println("No data found");
+		}
+		else {
+			DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+			
+			System.out.println("Clientes");
+			int cont = 1;
+			do
+			{	
+				System.out.println(cont+".-"+rs.getString(1) + " " + rs.getString(2)
+						+ ", " + rs.getString(3) + ", " + rs.getInt(4) 
+						+ ", " + df.format(rs.getDate(5)).toString() 
+						+ ", " + rs.getString(6)
+						+ ", " + rs.getString(7) + ", " + rs.getString(8));
+				cont++;
+			}
+			while(rs.next());
+			System.out.println();
+		}
+		rs.close();
+	}
+	
+	private static void showFuncionarios(ManejadorBaseDatos manejador) 
+		throws ClassNotFoundException, SQLException 
+	{
+		ResultSet rs = manejador.select("SELECT nombre,apellidos,direccion,"
+				+ "telefono,fecha_nacim, cargo, departamento,fecha_ingreso "
+				+ "FROM funcionarios;");
+		if (!rs.next()) {
+			System.out.println("No data found");
+		}
+		else {
+			DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+			
+			System.out.println("Funcionarios");
+			int cont = 1;
+			do
+			{	
+				System.out.println(cont+".-"+rs.getString(1) + " " + rs.getString(2)
+						+ ", " + rs.getString(3) + ", " + rs.getInt(4) 
+						+ ", " + df.format(rs.getDate(5)).toString() 
+						+ ", " + rs.getString(6)
+						+ ", " + rs.getString(7) 
+						+ ", " + df.format(rs.getDate(8)).toString());
+				cont++;
+			}
+			while(rs.next());
+			System.out.println();
+		}
+		rs.close();
+	}
+	
+
+	private static String getPersona(ManejadorBaseDatos manejador, int line) 
+			throws ClassNotFoundException, SQLException
+	{
+		ResultSet rs = manejador.select("SELECT * FROM ONLY personas ;");
+		
+		String persona = "";
+		if (!rs.next()) {
+		}
+		else {
+			int cont = 1;
+			do
+			{	
+				DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+				if(cont == line) 
+				{
+					persona = rs.getInt(1)+ "#" +rs.getString(2) 
+					+ "#" + rs.getString(3) + "#" + rs.getString(4) 
+					+ "#" + rs.getInt(5) + "#" + 
+					df.format(rs.getDate(6)).toString();
+				}
+				cont++;
+			}
+			while(rs.next() || cont < line);
+			System.out.println();
+		}
+		rs.close();
+		
+		return persona;
+	}
+	
+	private static String getCliente(ManejadorBaseDatos manejador, int line) 
+		throws ClassNotFoundException, SQLException
+	{
+		ResultSet rs = manejador.select("SELECT * FROM clientes;");
+		
+		String cliente = "";
+		if (!rs.next()) {
+		}
+		else {
+			int cont = 1;
+			do
+			{	
+				DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+				if(cont == line) 
+				{
+					cliente = rs.getInt(1)+ "#" +rs.getString(2) 
+					+ "#" + rs.getString(3) + "#" + rs.getString(4) 
+					+ "#" + rs.getInt(5) 
+					+ "#" + df.format(rs.getDate(6)).toString()
+					+ "#" + rs.getString(7) + "#" + rs.getString(8)
+					+ "#" + rs.getString(9);
+				}
+				cont++;
+			}
+			while(rs.next() || cont < line);
+			System.out.println();
+		}
+		rs.close();
+		
+		return cliente;
+	}
+	
+	private static String getFuncionario(ManejadorBaseDatos manejador, int line) 
+		throws ClassNotFoundException, SQLException
+	{
+		ResultSet rs = manejador.select("SELECT * FROM funcionarios;");
+		
+		String funcionarios = "";
+		if (!rs.next()) {
+		}
+		else {
+			int cont = 1;
+			do
+			{	
+				DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+				if(cont == line) 
+				{
+					funcionarios = rs.getInt(1)+ "#" +rs.getString(2) 
+					+ "#" + rs.getString(3) + "#" + rs.getString(4) 
+					+ "#" + rs.getInt(5) 
+					+ "#" + df.format(rs.getDate(6)).toString()
+					+ "#" + rs.getString(7) + "#" + rs.getString(8)
+					+ "#" + df.format(rs.getDate(9)).toString();
+				}
+				cont++;
+			}
+			while(rs.next() || cont < line);
+			System.out.println();
+		}
+		rs.close();
+		
+		return funcionarios;
+	}
+	
+	private static String[] getPersonaData(ManejadorBaseDatos manejador)
+	{
+		System.out.println("Nombre: ");
+		String nombre = sc.nextLine();
+		while(nombre.equals(""))
+		{
+			System.out.println("Nombre vacío prueba otra vez");
+			System.out.println("Nombre: ");
+			nombre = sc.nextLine();
+		}
+		
+		System.out.println("Apellidos: ");
+		String apellidos = sc.nextLine();
+		while(apellidos.equals(""))
+		{
+			System.out.println("Los apellidos no pueden esta vacios");
+			System.out.println("Apellidos: ");
+			apellidos = sc.nextLine();
+		}
+		
+		System.out.println("Dirección: ");
+		String direccion = sc.nextLine();
+		while(direccion.equals(""))
+		{
+			System.out.println("La dirección no puede esta vacía");
+			System.out.println("Dirección: ");
+			direccion = sc.nextLine();
+		}
+		
+		int telefono = 0;
+		do
+		{
+			System.out.println("Telefono: ");
+			String telefonoSTR = sc.nextLine();
+			if(telefonoSTR.length() == 9)
+			{
+				try {
+					telefono = Integer.parseInt(telefonoSTR);
+				}
+				catch (Exception e){
+					System.out.println("Error guardando el teléfono prueba con algo "
+							+ "parecido a 691230485");
+					telefono = 0;
+				}
+			}
+			else
+			{
+				System.out.println("El numero tiene que contener 9 digitos");
+			}
+		}
+		while(telefono == 0);
+		
+		boolean exit = false;
+		String fecha_nac;
+		do
+		{
+			System.out.println("Fecha Nacimiento (dd/MM/yyyy): ");
+			fecha_nac = sc.nextLine();
+			try {
+				SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+				formatter.parse(fecha_nac);
+				exit = true;
+			}
+			catch (Exception e){
+				System.out.println("Error con la fecha prueba con (dd/MM/yyyy)");
+			}
+		}
+		while(!exit);
+		
+		String[] persona = 
+			{nombre,apellidos,direccion,telefono+"",fecha_nac};
+		
+		return persona;
+	}
+	
+	private static String[] getPersonaDataModify(ManejadorBaseDatos manejador,
+		String[] personaActual) 
+		throws ClassNotFoundException, SQLException
+	{
+		String nombre = personaActual[1];
+		String apellidos = personaActual[2];
+		String direccion = personaActual[3];
+		String telefono = personaActual[4];
+		String fecha_nacim = personaActual[5];
+		
+		System.out.println("Pulsa enter para no cambiar");
+		
+		System.out.println("Nombre ("+nombre+"): ");
+		String newNombre = sc.nextLine();
+		if(!newNombre.equals(""))
+		{
+			nombre = newNombre;
+		}
+		
+		System.out.println("Apellidos ("+apellidos+"): ");
+		String newApellidos = sc.nextLine();
+		if(!newApellidos.equals(""))
+		{
+			apellidos = newApellidos;
+		}
+		
+		System.out.println("Dirección ("+direccion+"): ");
+		String newDireccion = sc.nextLine();
+		if(!newDireccion.equals(""))
+		{
+			direccion = newDireccion;
+		}
+		
+		int newTelefono = 0;
+		do
+		{
+			System.out.println("Telefono ("+telefono+"): ");
+			String telefonoSTR = sc.nextLine();
+			if(telefonoSTR.length() == 9)
+			{
+				try {
+					newTelefono = Integer.parseInt(telefonoSTR);
+				}
+				catch (Exception e){
+					System.out.println("Error guardando el teléfono prueba con algo "
+							+ "parecido a 691230485 o pulsa enter");
+					newTelefono = 0;
+				}
+			}
+			else if(telefonoSTR.equals(""))
+			{
+				newTelefono = 1;
+			}
+			else
+			{
+				System.out.println("El numero tiene que contener 9 digitos "
+					+ "o pulse enter para continuar");
+			}
+		}
+		while(newTelefono == 0);
+		if(newTelefono != 1)
+		{
+			telefono = newTelefono + "";
+		}
+		
+		boolean exit = false;
+		String fecha_nac;
+		do
+		{
+			System.out.println("Fecha Nacimiento ("+fecha_nacim+"): ");
+			fecha_nac = sc.nextLine();
+			if(!fecha_nac.equals(""))
+			{
+				try {
+					SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+					fecha_nacim = formatter.parse(fecha_nac).toString();
+					exit = true;
+				}
+				catch (Exception e){
+					System.out.println("Error con la fecha prueba con (dd/MM/yyyy)");
+				}
+			}
+			else
+			{
+				exit = true;
+			}
+		}
+		while(!exit);
+		
+		String[] persona = 
+			{nombre,apellidos,direccion,telefono+"",fecha_nacim};
+		
+		return persona;
+	}
+
+	
+	public static final int IBANNUMBER_MIN_SIZE = 15;
+    public static final int IBANNUMBER_MAX_SIZE = 34;
+    public static final BigInteger IBANNUMBER_MAGIC_NUMBER = new BigInteger("97");
+
+    public static boolean ibanTest(String accountNumber) {
+        String newAccountNumber = accountNumber.trim();
+
+        // Check that the total IBAN length is correct as per the country. If not, the IBAN is invalid. We could also check
+        // for specific length according to country, but for now we won't
+        if (newAccountNumber.length() < IBANNUMBER_MIN_SIZE || newAccountNumber.length() > IBANNUMBER_MAX_SIZE) {
+            return false;
+        }
+
+        // Move the four initial characters to the end of the string.
+        newAccountNumber = newAccountNumber.substring(4) + newAccountNumber.substring(0, 4);
+
+        // Replace each letter in the string with two digits, thereby expanding the string, where A = 10, B = 11, ..., Z = 35.
+        StringBuilder numericAccountNumber = new StringBuilder();
+        int numericValue;
+        for (int i = 0;i < newAccountNumber.length();i++) {
+            numericValue = Character.getNumericValue(newAccountNumber.charAt(i));
+            if(-1 >= numericValue) {
+                return false;
+            } else {
+                numericAccountNumber.append(numericValue);
+            }
+        }
+
+        // Interpret the string as a decimal integer and compute the remainder of that number on division by 97.
+        BigInteger ibanNumber = new BigInteger(numericAccountNumber.toString());
+        return ibanNumber.mod(IBANNUMBER_MAGIC_NUMBER).intValue() == 1;
+
+    }
+
+}
