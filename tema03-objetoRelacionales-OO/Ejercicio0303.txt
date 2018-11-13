@@ -1,0 +1,14 @@
+CREATE DOMAIN prioridad 
+      AS integer CHECK (VALUE >=0 AND VALUE <=5) ;
+
+alter table tareas 
+      add priority prioridad;
+  
+insert into tareas (descripcion, fechaPrevista, fechaAnotado, priority)
+      values ('prueba','16/04/2009', '16/07/2007 18:03:54', 1 );
+
+insert into tareas (descripcion, fechaPrevista, fechaAnotado, priority)
+      values ('prueba 2','16/04/2009', '16/07/2007 18:03:54', 6 );
+
+ERROR:  el valor para el dominio prioridad viola la restricción «check» «prioridad_check»
+SQL state: 23514
