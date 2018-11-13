@@ -1,0 +1,15 @@
+CREATE TABLE encargos (idEncargos serial primary key, pedidoPor TEXT) 
+	     INHERITS (tareas);
+	
+INSERT INTO encargos (descripcion, fechaPrevista, fechaAnotado, priority,
+                      tiempoEmpleado, category, comentarios, pedidoPor) 
+       VALUES ('prueba 5','19/08/2018', '20/10/2012 17:17:33', 3, 
+                ('18:20:15','19:45:45'),'Familia', '{"Comentario 1","Comentario 2", "Comentario 3"}', 'Adrián');
+
+
+INSERT INTO encargos ( pedidoPor) VALUES ('Adrián');
+
+SELECT * FROM encargos;
+SELECT * FROM ONLY encargos;
+SELECT * FROM tareas;
+SELECT * FROM ONLY tareas;
