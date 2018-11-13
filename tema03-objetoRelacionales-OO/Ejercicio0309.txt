@@ -1,0 +1,13 @@
+CREATE TABLE ciudad(nombre text, altitud integer, habitantes integer);
+
+CREATE TABLE capital(provincia text) INHERITS (ciudad);
+
+INSERT INTO ciudad(nombre, altitud, habitantes) 
+       VALUES('Alicante', 100, 2344235);
+	
+INSERT INTO capital(nombre, altitud, habitantes, provincia)
+	     VALUES('Valencia', 150, 2423525, 'Comunidad Valenciana');
+	
+SELECT * FROM ciudad;
+SELECT * FROM capital;
+SELECT * FROM ONLY ciudad;
