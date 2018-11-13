@@ -1,0 +1,25 @@
+CREATE TABLE Personas(Numero SERIAL PRIMARY KEY, Nombres VARCHAR(30), 
+                      Apellidos TEXT, Direccion TEXT, Telefono VARCHAR(12),
+                      Fecha_nacim TIMESTAMP);
+
+CREATE TABLE Clientes(NroCuenta TEXT, Estado TEXT, TipoCliente TEXT) 
+       INHERITS(Personas);
+
+CREATE TABLE Funcionarios(Cargo VARCHAR(30), Departamento VARCHAR(30), Fecha_Ingreso TIMESTAMP) 
+        INHERITS(Personas);
+
+INSERT INTO Personas(Nombres, Apellidos, Direccion, Telefono, Fecha_nacim) 
+	      VALUES('Gonzalo', 'Martines Font', 'Calle Tomás Capeli 52', '964213141', '1995-11-08');
+
+INSERT INTO Clientes(Nombres, Apellidos, Direccion, Telefono, Fecha_nacim, NroCuenta, Estado, TipoCliente) 
+	      VALUES('Luis', 'PruebaApellido', 'Calle de las pintas 21', '123412512', '1993-02-07', 
+		           '971-1234-8123', 'Estado1', 'Rico');
+
+INSERT INTO Funcionarios(Nombres, Apellidos, Direccion, Telefono, Fecha_nacim, Cargo, Departamento, Fecha_Ingreso) 
+	      VALUES('Sara', 'PruebaApellido1', 'Calle Arboleda Grande', '672341234', '1990-01-17', 
+		           'Jefe', 'Atención al cliente', '2010-12-12');
+
+SELECT * FROM Personas;
+SELECT * FROM Clientes;
+SELECT * FROM Funcionarios;
+SELECT * FROM ONLY Personas;
