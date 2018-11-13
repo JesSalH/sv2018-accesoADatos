@@ -1,0 +1,733 @@
+package Tema1;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.Date;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+public class Ejercicio15 {
+	static Scanner scn;
+	static Statement statement;
+	static String orden, user, password;
+	static int idUser;
+	static Connection con;
+	static boolean intBien;
+	
+	private static void menu() {
+		System.out.println("1.- Añadir tarea");
+		System.out.println("2.- Modificar tarea");
+		System.out.println("3.- Añadir usuario");
+		System.out.println("4.- Modificar mis datos");
+		System.out.println("5.- Asignar usuario a tarea");
+		System.out.println("6.- Ver mis tareas");
+		System.out.println("7.- Buscar tarea");
+		System.out.println("8.- Ver tareas de otro usuario");
+		System.out.println("9.- Ver número de tareas asignadas");
+		System.out.println("10.- Ver tareas sin asignar");
+		System.out.println("11.- Salir");
+		System.out.println("Introduce orden:");
+		orden=scn.nextLine();
+	}
+	
+	private static int crearBaseDatos() 
+			throws SQLException, ClassNotFoundException {
+		int salida = 0;
+		Class.forName("org.postgresql.Driver");
+		
+		String url = "jdbc:postgresql://localhost:5432/postgres";
+		String usuario = "postgres";
+		String password = "P0stgr3s";
+		String sql, respuesta;
+		con = DriverManager.getConnection(url, usuario, password);
+		
+		statement = con.createStatement();
+		
+		ResultSet rs = statement.executeQuery("select * from "
+				+ "pg_database where datname = 'jperez';");
+		
+		if(!rs.next()) {
+			System.out.println("La base de datos no existe");
+			System.out.println("¿Quieres crear la base de datos?");
+			respuesta = scn.nextLine();
+			if(respuesta.equals("Si") || respuesta.equals("si") || respuesta.equals("sí") || respuesta.equals("Sí")) {
+				sql = "create database jperez "
+						+ "with "
+						+ "OWNER = postgres "
+						+ "ENCODING = 'UTF8' "
+						+ "CONNECTION LIMIT = -1;";
+				if(statement.executeUpdate(sql) == 0) {
+					System.out.println("Base de datos creada");
+					salida = 1;
+				}
+			}else {
+				System.out.println("La base de datos no se creará");
+				salida = 2;
+			}
+		}
+		rs.close();
+		con.close();
+
+		if(salida != 2) {
+			url = "jdbc:postgresql://localhost:5432/jperez";
+			usuario = "postgres";
+			password = "P0stgr3s";
+			con = DriverManager.getConnection(url, usuario, password);
+			statement = con.createStatement();
+		}
+		
+		return salida;
+	}
+	
+	private static void crearTablas() throws SQLException {
+		String sql = "create table if not exists usuarios("
+					+ "idUsuario serial primary key,"
+					+ "nombre varchar(25) unique,"
+					+ "password varchar(10)"
+					+ ");"
+					+ "create table if not exists tareas("
+					+ "idTarea serial primary key,"
+					+ "descripcion varchar(25),"
+					+ "prioridad int,"
+					+ "fecha date"
+					+ ");"
+					+ "create table if not exists tareaXusuario("
+					+ "idUsuario int references usuarios(idUsuario),"
+					+ "idTarea int references tareas(idTarea),"
+					+ "primary key(idUsuario, idTarea)"
+					+ ");";
+		statement.executeUpdate(sql);
+
+		sql = "insert into usuarios(nombre, password) "
+				+ "values('admin', '1234');";
+		statement.executeUpdate(sql);
+		
+		sql = "create or replace function " + 
+				"LoginUser(usuario varchar, pass varchar) " + 
+				"returns integer as $$ " + 
+				"declare " + 
+				"	cantidad integer; " + 
+				"begin " + 
+				"	select count(*) into cantidad " + 
+				"	from usuarios u " + 
+				"	where u.nombre like usuario " + 
+				"	and u.password like pass; " + 
+				"	if cantidad = 1 " + 
+				"	then " + 
+				"		return 0; " + 
+				"	else " + 
+				"		return 1; " + 
+				"	end if; " + 
+				"end; " + 
+				"$$ " + 
+				"LANGUAGE plpgsql;";
+		statement.executeUpdate(sql);
+		
+		sql = "create or replace " + 
+				"function TareasSinAsignar() " + 
+				"returns setof tareas " + 
+				"as '" + 
+				"	select * from tareas t " + 
+				"	where  not exists(SELECT NULL " + 
+				"		FROM tareaXusuario txu " + 
+				"		WHERE txu.idTarea = t.idTarea" + 
+				"	) " + 
+				"	order by t.prioridad" + 
+				"' " + 
+				"LANGUAGE sql;";
+		statement.executeUpdate(sql);
+	}
+
+	public static int preguntarUsuario() throws SQLException {
+		int resultado = 1, intentos = 0;
+		String sql;
+		ResultSet rs;
+		CallableStatement cStmt = con.prepareCall("{call LoginUser(?,?)}");
+		cStmt.registerOutParameter(1, Types.INTEGER);
+		
+		do {
+			if(intentos > 0) {
+				System.out.println("Ha introducido mal el "
+						+ "usuario o la contraseña");
+			}
+			intentos++;
+			System.out.print("Usuario: ");
+			user=scn.nextLine();
+			System.out.print("Contraseña: ");
+			password=scn.nextLine();
+			
+			cStmt.setString(1, user);
+			cStmt.setString(2, password);
+			
+			cStmt.execute();
+			
+			resultado = cStmt.getInt(1);
+			
+		}while(resultado != 0 && intentos<2);
+		
+		if(resultado == 0) {
+			sql = "select idUsuario from usuarios where nombre like('"+user+"')";
+			rs = statement.executeQuery(sql);
+			if(rs.next()) {
+				idUser = rs.getInt(1);
+			}
+			rs.close();
+			System.out.println("Bienvenido "+user+" al programa de Jairo");
+			System.out.println("Pulse enter");
+			scn.nextLine();
+			return 0;
+		}else {
+			System.out.println("Ha introducido mal el "
+					+ "usuario o la contraseña");
+			System.out.println("Ha cumplido el límite de intentos");
+			return 1;
+		}
+	}
+	
+	public static void AddTarea() throws SQLException {
+		String descripcion, sql, fecha;
+		int prioridad = 0;
+		
+		do {
+			System.out.println("Introduce descripción:");
+			descripcion = scn.nextLine();
+			if(descripcion.equals("")) {
+				System.out.println("No puede estar vacio");
+				System.out.println("Pulse enter");
+				scn.nextLine();
+			}
+		}while(descripcion.equals(""));
+		
+		do{
+			try {
+				System.out.println("Introduce prioridad (1-9):");
+				prioridad = scn.nextInt();
+				scn = new Scanner(System.in);
+				if(!(prioridad>=1 && prioridad<=9)) {
+					System.out.println("Introduce un número entre 1 y 9");
+					System.out.println("Pulse enter");
+					scn.nextLine();
+				}else {
+					intBien = true;
+				}
+			}catch(InputMismatchException e) {
+				scn = new Scanner(System.in);
+				System.out.println("No ha introducido un número");
+				System.out.println("Pulse enter");
+				scn.nextLine();
+			}
+		}while(!intBien && !(prioridad>=1 && prioridad<=9));
+		intBien = false;
+		
+		System.out.println("Introduce fecha(dd/mm/yyyy):");
+		fecha = scn.nextLine();
+		
+		sql = "insert into tareas(descripcion, prioridad, fecha)"
+				+ " values('"+descripcion+"', "+prioridad+", "
+						+ "'"+fecha+"')";
+		if(1 == statement.executeUpdate(sql)) {
+			System.out.println("Operación realizada con exito");
+			System.out.println("Pulse enter");
+			scn.nextLine();
+		}
+	}
+	
+	public static void ModificarTarea() throws SQLException {
+		String sql = "select * from tareas order by idTarea", orden, descripcion, fecha;
+		int prioridad = 0, tarea;
+		boolean salir = false;
+		ResultSet rs = statement.executeQuery(sql);
+		
+		if(rs.isBeforeFirst()) {
+			System.out.println("ID" + "\t" + "Descripcion" + "\t\t" 
+					+ "Prioridad" + "\t" + "Fecha");
+			System.out.println("----------------------------------"
+					+ "-----------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t" + rs.getString(2) + 
+						"\t\t\t" + rs.getString(3) + "\t\t" + rs.getString(4));
+			}
+			System.out.println("Introduce ID de la tarea a modificar:");
+			tarea=scn.nextInt();
+			scn = new Scanner(System.in);
+			
+			do {
+				sql="select * from tareas where idTarea="+tarea;
+				rs = statement.executeQuery(sql);
+				
+				if(rs.next()) {
+					System.out.println("1.- Descripción: " + rs.getString(2));
+					System.out.println("2.- Prioridad: " + rs.getString(3));
+					System.out.println("3.- Fecha: " + rs.getString(4));
+					System.out.println("0.- Salir");
+					System.out.println("Introduce orden:");
+					orden=scn.nextLine();
+					
+					switch(orden) {
+					case "1":
+						do {
+							System.out.println("Introduce descripción:");
+							descripcion = scn.nextLine();
+							if(descripcion.equals("")) {
+								System.out.println("No puede estar vacio");
+								System.out.println("Pulse enter");
+								scn.nextLine();
+							}
+						}while(descripcion.equals(""));
+						
+						sql = "update tareas set descripcion='"+descripcion+
+								"' where idTarea="+tarea;
+						if(1 == statement.executeUpdate(sql)) {
+							System.out.println("Cambio realizado");
+							System.out.println("Pulse enter");
+							scn.nextLine();
+						}
+						break;
+					case "2":
+						do{
+							try {
+								System.out.println("Introduce prioridad (1-9):");
+								prioridad = scn.nextInt();
+								scn = new Scanner(System.in);
+								if(!(prioridad>=1 && prioridad<=9)) {
+									System.out.println("Introduce un número entre 1 y 9");
+									System.out.println("Pulse enter");
+									scn.nextLine();
+								}else {
+									intBien = true;
+								}
+							}catch(InputMismatchException e) {
+								scn = new Scanner(System.in);
+								System.out.println("No ha introducido un número");
+								System.out.println("Pulse enter");
+								scn.nextLine();
+							}
+						}while(!intBien && !(prioridad>=1 && prioridad<=9));
+						intBien = false;
+						
+						sql = "update tareas set prioridad='"+prioridad+
+								"' where idTarea="+tarea;
+						if(1 == statement.executeUpdate(sql)) {
+							System.out.println("Cambio realizado");
+							System.out.println("Pulse enter");
+							scn.nextLine();
+						}
+						break;
+					case "3":
+						System.out.println("Introduce fecha(dd/mm/yyyy):");
+						fecha = scn.nextLine();
+						
+						sql = "update tareas set fecha='"+fecha+"' where idTarea="+tarea;
+						if(1 == statement.executeUpdate(sql)) {
+							System.out.println("Cambio realizado");
+							System.out.println("Pulse enter");
+							scn.nextLine();
+						}
+						break;
+					case "0":
+						salir = true;
+						break;
+					default:
+						System.out.println("Orden mal introducida");
+						scn.nextLine();
+						break;
+					}
+				}else {
+					System.out.println("ID mal introducido");
+					System.out.println("Pulse enter");
+					scn.nextLine();
+					salir = true;
+				}
+			}while(!salir);
+		}else {
+			System.out.println("No hay tareas");
+			System.out.println("Pulse enter");
+			scn.nextLine();
+		}
+		rs.close();
+	}
+	
+	public static void AddUsuario() throws SQLException {
+		String nombre, pass, sql;
+		boolean repetido;
+		ResultSet rs;
+		
+		do {
+			repetido = false;
+			System.out.println("Introduce nombre:");
+			nombre=scn.nextLine();
+			
+			System.out.println("Introduce contraseña:");
+			pass=scn.nextLine();
+			
+			sql = "select nombre from usuarios";
+			rs = statement.executeQuery(sql);
+			if(rs.isBeforeFirst()) {
+				while (rs.next()) {
+					if(rs.getString(1).equals(nombre)) {
+						repetido = true;
+					}
+				}
+			}
+			
+			if(!repetido) {
+				sql = "insert into usuarios(nombre, password)"
+						+ " values('"+nombre+"', '"+pass+"')";
+				if(1 == statement.executeUpdate(sql)) {
+					System.out.println("Operación realizada con exito");
+					System.out.println("Pulse enter");
+					scn.nextLine();
+				}
+			}else {
+				System.out.println("El usuario no puede repetirse");
+				System.out.println("Pulse enter");
+				scn.nextLine();
+			}
+		}while(repetido);
+		rs.close();
+	}
+	
+	public static void ModificarMisDatos() throws SQLException {
+		String nombre, pass, sql, orden;
+		boolean repetido, salir = false;
+		ResultSet rs;
+		
+		do {
+			System.out.println("1.- Nombre: " + user);
+			System.out.println("2.- Contraseña: " + password);
+			System.out.println("0.- Salir");
+			System.out.println("Introduce orden:");
+			orden=scn.nextLine();
+			
+			switch(orden) {
+			case  "1":
+				do {
+					repetido = false;
+					System.out.println("Introduce nombre:");
+					nombre=scn.nextLine();
+					
+					sql = "select nombre from usuarios";
+					rs = statement.executeQuery(sql);
+					if(rs.isBeforeFirst()) {
+						while (rs.next()) {
+							if(rs.getString(1).equals(nombre)) {
+								repetido = true;
+							}
+						}
+					}
+					if(!repetido) {
+						sql = "update usuarios set nombre='"+nombre+
+								"' where nombre='"+user+"'";
+						if(1 == statement.executeUpdate(sql)) {
+							user = nombre;
+							System.out.println("Cambio realizado");
+							System.out.println("Pulse enter");
+							scn.nextLine();
+						}
+					}else {
+						System.out.println("No puede poner un nombre que ya tenga otro usuario");
+					}
+					rs.close();
+				}while(repetido);
+				break;
+			case  "2":
+				System.out.println("Introduce contraseña:");
+				pass=scn.nextLine();
+				
+				sql = "update usuarios set password='"+pass+
+						"' where nombre='"+user+"'";
+				if(1 == statement.executeUpdate(sql)) {
+					password = pass;
+					System.out.println("Cambio realizado");
+					System.out.println("Pulse enter");
+					scn.nextLine();
+				}
+				break;
+			case  "0":
+				salir = true;
+				break;
+			default:
+				System.out.println("Orden mal introducida");
+				scn.nextLine();
+				break;
+			}
+		}while(!salir);
+	}
+	
+	public static void AsignarUsuarioATarea() throws SQLException {
+		String sql = "select * from tareas order by idTarea";
+		int tarea, usu;
+		boolean estarTarea, estarUsuario;
+		ResultSet rs = statement.executeQuery(sql);
+		
+		if(rs.isBeforeFirst()) {
+			System.out.println("ID" + "\t" + "Descripcion" + "\t\t" 
+					+ "Prioridad" + "\t" + "Fecha");
+			System.out.println("----------------------------------"
+					+ "-----------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t" + rs.getString(2) + 
+						"\t\t\t" + rs.getString(3) + "\t\t" + rs.getString(4));
+			}
+			do {
+				estarTarea = false;
+				System.out.println("Introduce ID de la tarea a asignar:");
+				tarea=scn.nextInt();
+				scn = new Scanner(System.in);
+				
+				rs = statement.executeQuery(sql);
+				if(rs.isBeforeFirst()) {
+					while (rs.next()) {
+						if(rs.getInt(1) == tarea) {
+							estarTarea = true;
+						}
+					}
+				}
+				if(!estarTarea) {
+					System.out.println("Ha introducido el ID incorrectamente");
+				}
+			}while(!estarTarea);
+			
+			sql = "select idusuario,nombre from usuarios order by idUsuario";
+			rs = statement.executeQuery(sql);
+			
+			if(rs.isBeforeFirst()) {
+				System.out.println("ID" + "\t" + "Nombre");
+				System.out.println("----------------------------------");
+				while (rs.next()) {
+					System.out.println(rs.getString(1) + "\t" + rs.getString(2));
+				}
+				do {
+					estarUsuario = false;
+					System.out.println("Introduce ID del usuario al cual asginar la tarea:");
+					usu=scn.nextInt();
+					scn = new Scanner(System.in);
+					
+					rs = statement.executeQuery(sql);
+					if(rs.isBeforeFirst()) {
+						while (rs.next()) {
+							if(rs.getInt(1) == usu) {
+								estarUsuario = true;
+							}
+						}
+					}
+					if(!estarUsuario) {
+						System.out.println("Ha introducido el ID incorrectamente");
+					}
+				}while(!estarUsuario);
+				
+				sql = "insert into tareaXusuario(idUsuario, idTarea)"
+						+ " values("+usu+", "+tarea+")";
+				if(1 == statement.executeUpdate(sql)) {
+					System.out.println("Operación realizada con exito");
+					System.out.println("Pulse enter");
+					scn.nextLine();
+				}
+			}else {
+				System.out.println("No hay usuarios");
+				System.out.println("Pulse enter");
+				scn.nextLine();
+			}
+		}else {
+			System.out.println("No hay tareas");
+			System.out.println("Pulse enter");
+			scn.nextLine();
+		}
+		rs.close();
+	}
+	
+	public static void VerMisTareas() throws SQLException {
+		String sql = "select * from tareas t inner join tareaXusuario txu "
+					+ "on txu.idUsuario="+idUser
+					+" where txu.idTarea=t.idTarea "
+					+ "order by t.prioridad";
+		ResultSet rs = statement.executeQuery(sql);
+		
+		if(rs.isBeforeFirst()) {
+			System.out.println("Descripcion" + "\t\t" 
+					+ "Prioridad" + "\t" + "Fecha");
+			System.out.println("----------------------------------"
+							+ "--------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(2) + "t\t\t" + rs.getString(3)
+						+ "\t\t" + rs.getString(4));
+			}
+		}else {
+			System.out.println("No hay tareas");
+			System.out.println("Pulse enter");
+		}
+		scn.nextLine();
+		rs.close();
+	}
+	
+	public static void BuscarTarea() throws SQLException {
+		String descripcion;
+		String sql;
+		ResultSet rs;
+		
+		System.out.print("Tarea que buscar: ");
+		descripcion = scn.nextLine();
+		
+		sql = "select * from tareas where descripcion like('%"+descripcion+"%') order by idTarea";
+		rs = statement.executeQuery(sql);
+		
+		if(rs.isBeforeFirst()) {
+			System.out.println("ID" + "\t" + "Descripcion" + "\t\t" 
+					+ "Prioridad" + "\t" + "Fecha");
+			System.out.println("----------------------------------"
+					+ "-----------------------------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t" + rs.getString(2) + 
+						"\t\t\t" + rs.getString(3) + "\t\t" + rs.getString(4));
+			}
+		}else {
+			System.out.println("No hay tareas con esa descripción");
+			System.out.println("Pulse enter");
+		}
+		scn.nextLine();
+		rs.close();
+	}
+	
+	public static void VerTareasOtroUsuario() throws SQLException {
+		String sql = "select u.nombre,t.descripcion,t.prioridad,t.fecha "
+				+ "from tareas t, usuarios u inner join tareaXusuario txu "
+				+ "on txu.idUsuario!="+idUser
+				+" where txu.idTarea=t.idTarea and u.idUsuario=txu.idUsuario "
+				+ "order by u.nombre, t.prioridad";
+	ResultSet rs = statement.executeQuery(sql);
+	
+	if(rs.isBeforeFirst()) {
+		System.out.println("Nombre" + "\t\t" + "Descripcion" + "\t\t" 
+				+ "Prioridad" + "\t" + "Fecha");
+		System.out.println("----------------------------------"
+						+ "----------------------------------------");
+		while (rs.next()) {
+			System.out.println(rs.getString(1) + "\t\t" + rs.getString(2)
+					+ "\t\t\t" + rs.getString(3) + "\t\t" + rs.getString(4));
+		}
+	}else {
+		System.out.println("No hay tareas");
+		System.out.println("Pulse enter");
+	}
+	scn.nextLine();
+	rs.close();
+	}
+	
+	public static void VerNTareasAsignadas() throws SQLException {
+		String sql = "select count(u.idUsuario),u.nombre from usuarios u "
+				+ "inner join tareaXusuario txu on "
+				+ "txu.idUsuario=u.idUsuario group by u.idUsuario "
+				+ "order by count(u.idUsuario)";
+	ResultSet rs = statement.executeQuery(sql);
+	
+	if(rs.isBeforeFirst()) {
+		System.out.println("Número" + "\t" 
+				+ "Nombre");
+		System.out.println("------------------------");
+		while (rs.next()) {
+			System.out.println(rs.getString(1) + "\t" + rs.getString(2));
+		}
+	}else {
+		System.out.println("No hay tareas");
+		System.out.println("Pulse enter");
+	}
+	scn.nextLine();
+	rs.close();
+	}
+	
+	public static void VerTereasSinAsignar() throws SQLException {
+		PreparedStatement pStmt = con.prepareStatement(
+										"Select descripcion,prioridad,fecha from TareasSinAsignar()");
+		
+		ResultSet rs = pStmt.executeQuery();
+		
+		if(rs.isBeforeFirst()) {
+			System.out.println("Descripcion" + "\t\t" 
+					+ "Prioridad" + "\t" + "Fecha");
+			System.out.println("---------------------------------"
+					+ "---------------");
+			while (rs.next()) {
+				System.out.println(rs.getString(1) + "\t\t" + 
+						rs.getString(2) + "\t" + rs.getString(3));
+			}
+		}else {
+			System.out.println("No hay tareas");
+			System.out.println("Pulse enter");
+		}
+		scn.nextLine();
+		
+		rs.close();
+	}
+	
+	public static void main(String[] args){
+		try {
+			scn = new Scanner(System.in);
+			intBien = false;
+			int baseDatos = crearBaseDatos();
+			if(baseDatos != 2) {
+				if(baseDatos == 1) {
+					crearTablas();
+				}
+				
+				if(preguntarUsuario() == 0) {
+					boolean salir = false;
+					
+					do {
+						menu();
+						switch(orden) {
+						case("1"):
+							AddTarea();
+							break;
+						case("2"):
+							ModificarTarea();
+							break;
+						case("3"):
+							AddUsuario();
+							break;
+						case("4"):
+							ModificarMisDatos();
+							break;
+						case("5"):
+							AsignarUsuarioATarea();
+							break;
+						case("6"):
+							VerMisTareas();
+							break;
+						case("7"):
+							BuscarTarea();
+							break;
+						case("8"):
+							VerTareasOtroUsuario();
+							break;
+						case("9"):
+							VerNTareasAsignadas();
+							break;
+						case("10"):
+							VerTereasSinAsignar();
+							break;
+						case("11"):
+							salir = true;
+							break;
+						default:
+							System.out.println("Orden mal introducida");
+							scn.nextLine();
+							break;
+						}
+					}while(!salir);
+				}
+				con.close();
+			}
+		}catch(ClassNotFoundException e) {
+			System.out.println(e.getMessage());
+		}catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}finally{
+			System.out.println("Usted a salido del programa");
+		}
+	}
+}
