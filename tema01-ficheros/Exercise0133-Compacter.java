@@ -1,5 +1,4 @@
 //Álvaro Monllor Quesada
-package ejercicio2;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,10 +7,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class Ejercicio2 {
+public class Compactador {
 
-	public static void main(String[] args) {
-		try {
+    public static void main(String[] args) {
+        try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(
                     new File("alumnos2.xml")));
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(
@@ -20,9 +19,9 @@ public class Ejercicio2 {
             String line = bufferedReader.readLine();
             
             while(line != null) {
-            	bufferedWriter.write(line.trim()
-            			.replace(" duplicado=\"si\"", "")
-            			.replace(" conflicto=\"si\"", ""));
+                bufferedWriter.write(line.trim()
+                        .replace(" duplicado=\"si\"", "")
+                        .replace(" conflicto=\"si\"", ""));
                 bufferedWriter.newLine();
                 line = bufferedReader.readLine();               
             }
@@ -33,6 +32,6 @@ public class Ejercicio2 {
             System.out.println("Error when reading file");
             return;
         }
-	}
+    }
 
 }
