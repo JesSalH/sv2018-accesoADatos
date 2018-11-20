@@ -1,0 +1,44 @@
+CREATE DATABASE revisiones;
+
+CREATE TABLE propietario(
+	dni VARCHAR(9) PRIMARY KEY,
+	nombre TEXT,
+	apellidos TEXT,
+	telefono NUMERIC(9),
+	email TEXT	
+);
+
+CREATE TABLE vehiculo(
+	idVehiculo SERIAL PRIMARY KEY,
+	matricula TEXT,
+	marca TEXT,
+	modelo TEXT,
+	fechaMatriculacion DATE,
+	dniPropietario VARCHAR(9) REFERENCES propietario(dni)
+);
+
+--CREATE TYPE resultadoRevision AS ENUM('favorable','desfavorable');
+	
+CREATE TABLE revision(
+	id SERIAL PRIMARY KEY,
+	fechaRevisionActual DATE,
+	fechaLimiteProximaRevision DATE,
+	resultado resultadoRevision,
+	idVehiculo INTEGER REFERENCES vehiculo(idVehiculo)
+);
+
+INSERT INTO propietario
+	VALUES('12345678a','Sam','Jeje',684324337,'sam@gmail.com');
+INSERT INTO propietario
+	VALUES('98765432a','Manolo','Faggot',675344332,'manolo@gmail.com');
+
+INSERT INTO vehiculo(matricula,marca,modelo,fechaMatriculacion,dniPropietario)
+	VALUES('1234 ABC','Seat','Ibiza','13/11/2018','12345678a');
+INSERT INTO vehiculo(matricula,marca,modelo,fechaMatriculacion,dniPropietario)
+	VALUES('5678 DEF','Audi','R8','12/11/2018','98765432a');
+
+INSERT INTO revision(fechaRevisionActual,fechaLimiteProximaRevision,resultado,idVehiculo)
+	VALUES('13/01/2018','13/11/2018','favorable',1);
+INSERT INTO revision(fechaRevisionActual,fechaLimiteProximaRevision,resultado,idVehiculo)
+	VALUES('13/01/2018','15/10/2018','desfavorable',2);
+
