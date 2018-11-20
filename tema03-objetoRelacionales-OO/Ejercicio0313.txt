@@ -1,0 +1,355 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
+
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
+public class Exercise02E01 {
+
+	
+	public static void printMenu() {
+		System.out.println("1.- Añadir vehículo");
+		System.out.println("2.- Anotar resultado revisión");
+		System.out.println("3.- Ver todos los vehículos de un propietario");
+		System.out.println("4.- Ver los datos y revisiones de un vehículo");
+		System.out.println("5.- Ver vehículos con la revisión caducada");
+		System.out.println("S.- Salir");
+
+		System.out.print("Opción: ");
+	}
+	
+	
+	private static Connection ConnectDB() throws ClassNotFoundException, 
+	SQLException {
+		Class.forName("org.postgresql.Driver");
+		String url = "jdbc:postgresql://localhost:5432/revisiones";
+		String usuario = "postgres";
+		String password = "1234";
+
+		return DriverManager.getConnection(url, usuario, password);
+	}
+	
+	private static void addVehiculo() {
+		String matricula, marca, modelo, fecha, dni;
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.print("Matricula: ");
+		matricula = scn.nextLine();
+		
+		System.out.print("Marca: ");
+		marca = scn.nextLine();
+		
+		System.out.print("Modelo: ");
+		modelo = scn.nextLine();
+		
+		System.out.print("Fecha: ");
+		fecha = scn.nextLine();
+		
+		System.out.print("Propietario DNI: ");
+		dni = scn.nextLine();
+		
+		int id = isPropietario(dni);
+		if(id == 0)
+			addPropietario(dni);
+		
+		execute("insert into vehiculos(matricula, marca, modelo, fecha, "
+				+ "propietario) values ('"+matricula+"', '"+marca+"', "
+						+ "'"+modelo+"', '"+fecha+"', "+id+");");
+		
+	} 
+	
+	private static int isPropietario(String dni) {
+		int execution = 0;
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			ResultSet rs = stmt.executeQuery("select id from propietarios"
+					+ " where dni = '" +dni+"'");
+			
+			if(rs.isBeforeFirst())
+				execution = rs.getInt(1);
+
+			stmt.close();
+			con.close();
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Ha habido un problema con la base de datos");
+		}
+		
+		return execution;
+	}
+
+	private static void addPropietario(String dni) {
+		String nombre, apellidos, telefono, email;
+		Scanner scn = new Scanner(System.in);
+		
+		System.out.print("Nombre: ");
+		nombre = scn.nextLine();
+		System.out.print("Apellidos: ");
+		apellidos = scn.nextLine();
+		
+		System.out.print("Teléfono: ");
+		telefono = scn.nextLine();
+		
+		System.out.print("Email: ");
+		email = scn.nextLine();
+		
+		int insertado = 
+				execute("insert into propietarios(dni, nombre, apellidos, "
+				+ "telefono, email) values ('"+dni+"', '"+nombre+"', '"
+				+ apellidos+"', '"+telefono+"', '"+email+"')");
+		
+		if(insertado == 1)
+			System.out.println("Propietario registrado con exito");
+		else
+			System.out.println("No se ha podido registrar el propietario");
+	}
+
+	
+	private static int execute(String query) {
+		int execution = 0;
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			execution = stmt.executeUpdate(query);
+			
+
+			stmt.close();
+			con.close();
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Ha habido un problema con la base de datos");
+		}
+		
+		return execution;
+	}
+	
+	
+	private static void addObservacionRevision() {
+		Scanner scn = new Scanner(System.in);
+		String id, idResultado;
+		if(showRevisiones()) {
+			System.out.print("ID Revisión: ");
+			id = scn.nextLine();
+			
+			showObservaciones();
+			
+			System.out.print("Resultado: ");
+			idResultado = scn.nextLine();
+			
+			execute("update revisiones set observacion="+idResultado+" where "
+					+ "id=" + id);
+		}
+	}
+	
+	private static void showObservaciones() {
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			ResultSet rs = stmt.executeQuery("select * from observaciones");
+			
+			if(rs.isBeforeFirst())
+				while(rs.next())
+					System.out.println(rs.getInt(1) + " " + rs.getString(2));
+			stmt.close();
+			con.close();
+
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Hubo un problema mostrando las observaciones");
+		}
+	}
+	
+	private static boolean showRevisiones() {
+		boolean datos = false;
+		
+		try {
+			Connection con = ConnectDB();
+			Statement stmnt = con.createStatement();
+			
+			ResultSet rs = 
+					stmnt.executeQuery("select r.id, r.matricula,"
+							+ " r.fechaActual, r.fechaLimite, o.observacion "
+							+ "from revisiones r left join observaciones o "
+							+ "on r.observacion = o.id");
+			
+			if(rs.isBeforeFirst()) {
+				while(rs.next())
+					printDataRevisiones(rs,true);
+				
+				datos = true;
+			}
+			else
+				System.out.println("No hay revisiones");
+			
+			stmnt.close();
+			con.close();
+
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Hubo problemas mostrando las revisones");
+		}
+		return datos;
+	}
+	
+	
+	
+	private static void printDataVehiculo(ResultSet rs) throws SQLException {
+		System.out.println(rs.getString(1) + " " + rs.getString(2) + " " + rs.getString(3) + " " + rs.getDate(4).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " + rs.getString(5));
+	}
+	
+	private static void printDataRevisiones(ResultSet rs, boolean id) throws SQLException {
+		if(id)
+			System.out.println(rs.getInt(1) + " " + rs.getString(2) + " " + rs.getDate(3).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " + rs.getDate(4).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + rs.getString(5));
+
+		else
+			System.out.println(rs.getString(1) + " " + rs.getDate(2).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " " + rs.getDate(3).toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + rs.getString(4));
+	}
+	
+	
+	
+	private static void getVehiculosPropietario() {
+		Scanner scn = new Scanner(System.in);
+		String cadena;
+		
+		System.out.print("Buscar: ");
+		
+		cadena = scn.nextLine();
+		
+		showVehiculosPropietario(cadena);
+		
+	}
+	
+	
+	private static void showVehiculosPropietario(String cadena) {
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			ResultSet rs = stmt.executeQuery("select v.matricula, v.marca, "
+					+ "v.modelo, v.fecha, p.dni from vehiculos v left join "
+					+ "propietarios p on v.propietario = p.id "
+					+ "where p.dni = '" + cadena + "' or p.apellidos like '%"
+					+ cadena + "%'");
+			
+			if(rs.isBeforeFirst()) {
+				while(rs.next())
+					printDataVehiculo(rs);
+
+			}
+			else
+				System.out.println("No hay resultados");
+			
+			stmt.close();
+			con.close();
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Ha habido un problema mostrando los datos");
+		}
+	}
+	
+	private static void getHistorialVehiculo() {
+		Scanner scn = new Scanner(System.in);
+		System.out.print("Matricula: ");
+		String matricula = scn.nextLine();
+		
+		getRevisionesVehiculo(matricula);
+	}
+	
+	private static void getRevisionesVehiculo(String matricula) {
+
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			ResultSet rs = stmt.executeQuery("select v.matricula, v.marca, v.modelo, v.fecha, p.dni from vehiculos v left join propietarios p on v.propietario = p.id where v.matricula like '" + matricula + "'");
+			
+			if(rs.isBeforeFirst()) {
+				printDataVehiculo(rs);
+				
+				rs = stmt.executeQuery("select  r.matricula, r.fechaActual, r.fechaLimite, o.observacion from revisiones r left join observaciones o on r.observacion = o.id where v.matricula like '" + matricula + "'");
+
+				if(rs.isBeforeFirst())
+					while(rs.next()) {
+						printDataRevisiones(rs,false);
+					}
+				else
+					System.out.println("No hay revisiones");
+			}
+			else
+				System.out.println("No hay vehículo");
+			
+
+			
+			stmt.close();
+			con.close();
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Ha habido un problema mostrando los datos");
+		}
+	}
+	
+	
+	private static void getVehiculosRevisionCaducada() {
+
+		try {
+			Connection con = ConnectDB();
+			Statement stmt = con.createStatement();
+			
+			ResultSet rs = stmt.executeQuery("select v.matricula, v.marca, v.modelo, "
+					+ "v.fecha, p.dni from vehiculos v left join propietarios p on "
+					+ "v.propietario = p.id left join revisiones r on "
+					+ "v.matricula = r.matricula "
+					+ "where r.fechalimite < current_date");
+			
+			if(rs.isBeforeFirst())
+				while(rs.next())
+					printDataVehiculo(rs);
+			else
+				System.out.println("No hay resultados");
+		} catch (ClassNotFoundException | SQLException e) {
+			System.out.println("Ha habido un problema mostrando los datos");
+		}
+
+	}
+	
+	
+	public static void main(String[] args) {
+		
+		boolean salir = false;
+		String opcion = "";
+		Scanner scn = new Scanner(System.in);
+		do {
+			printMenu();
+			opcion = scn.nextLine();
+			
+			switch(opcion) {
+				case "1":
+					addVehiculo();
+					break;
+				case "2":
+					addObservacionRevision();
+					break;
+				case "3":
+					getVehiculosPropietario();
+					break;
+				case "4":
+					getHistorialVehiculo();
+					break;
+				case "5":
+					getVehiculosRevisionCaducada();
+					break;
+				case "s":
+				case "S":
+					salir = true;
+					break;
+				default:
+					System.out.println("Opción incorrecta");
+					break;
+			}
+		} while (!salir);
+	}
+
+
+}
