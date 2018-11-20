@@ -1,0 +1,15 @@
+select v.matricula, v.marca, v.modelo, v.fecha_matricula, v.propietario
+	from vehiculo v, persona p
+		where v.propietario = p.dni 
+		and p.telefono is null 
+		and p.correo is null;
+						   
+select v.matricula, v.marca, v.modelo, v.fecha_matricula, v.propietario
+	from vehiculo v
+		where v.matricula not in (select i.vehiculo from inspeccion i);
+						   
+select p.dni, p.nombre, p.apellido, p.telefono, p.correo
+	from persona p
+		where p.dni in (select v.propietario from vehiculo v
+					   		where v.fecha_matricula > NOW() - INTERVAL '4 YEAR'
+					   			and v.fecha_matricula < NOW() + INTERVAL '2 MONTH');
