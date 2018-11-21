@@ -1,0 +1,41 @@
+SELECT codigo, 
+       nombre 
+FROM   cursos 
+WHERE  codigo NOT IN (SELECT curso 
+                      FROM   matriculas) 
+ORDER  BY nombre; 
+
+
+
+SELECT a.nombre, 
+       c.nombre 
+FROM   alumnos a 
+       LEFT JOIN matriculas m 
+              ON m.alumno = a.codigo 
+       LEFT JOIN cursos c 
+              ON m.curso = c.codigo 
+ORDER  BY a.nombre, 
+          c.nombre; 
+
+
+
+SELECT nombre 
+FROM   cursos 
+WHERE  codigo IN (SELECT curso 
+                  FROM   matriculas 
+                  GROUP  BY curso 
+                  HAVING Count(*) > 20) 
+ORDER  BY fechainicio DESC; 
+
+
+
+SELECT m.nombre, 
+       Count(ma.alumno) cantidad 
+FROM   monitores m 
+       LEFT JOIN cursos c 
+              ON m.codigo = c.monitor 
+       LEFT JOIN matriculas ma 
+              ON ma.curso = c.codigo 
+GROUP  BY m.nombre, 
+          c.codigo 
+ORDER  BY cantidad DESC; 
