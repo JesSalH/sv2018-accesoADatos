@@ -1,0 +1,47 @@
+create database "escuela deportiva";
+
+create table monitores(
+	codigo int,
+	nombre text,
+	primary key (codigo)
+);
+
+create table cursos(
+	codigo text, 
+	nombre text,
+	fechaInicio date,
+	fechaFin date,
+	monitor integer,
+	primary key(codigo),
+	foreign key (monitor) references monitores(codigo)
+);
+
+create table alumnos(
+	codigo int,
+	nombre text,
+	fechaNacimiento date,
+	primary key(codigo)
+);
+
+create table matriculas(
+	codigo serial,
+	alumno integer,
+	curso text,
+	primary key (codigo),
+	foreign key (alumno) references alumnos(codigo),
+	foreign key (curso) references cursos(codigo)
+);
+
+insert into monitores(codigo, nombre) values(1, 'Juan Carlos Ferrero');
+insert into monitores(codigo, nombre) values(2, 'Marc Gasol');
+
+insert into cursos(codigo, nombre, fechainicio, fechafin, monitor) values ('BAL', 'Baloncesto' , '24/01/2018', '01/07/2018', 2);
+insert into cursos(codigo, nombre, fechainicio, fechafin, monitor) values ('TNS', 'Tenis' , '24/01/2018', '01/07/2018', 1);
+
+insert into alumnos(codigo, nombre, fechanacimiento) values (1, 'Francisco Verdú', '24/07/1990');
+insert into alumnos(codigo, nombre, fechanacimiento) values (1, 'Marcos García', '12/04/1993');
+
+insert into matriculas(alumno, curso) values (1,'BAL');
+
+
+
