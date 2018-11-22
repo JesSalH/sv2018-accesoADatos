@@ -11,7 +11,7 @@
             <?php
             $host ="localhost";
             $usuario = "root";
-            $password = "";
+            $password = "root";
             $baseDeDatos = "adatos";
             $mysqli = new mysqli($host,
                 $usuario, $password, $baseDeDatos);
@@ -28,7 +28,8 @@
             if ($resultado = $mysqli->query(
                 "SELECT * FROM alumnos"))
             {
-                echo "Cantidad de filas encontradas: " . $resultado->num_rows;
+                echo "Cantidad de filas encontradas: " . 
+                    $resultado->num_rows . "<br />";
                     
                 while ($registro = $resultado->fetch_array())
                 {
